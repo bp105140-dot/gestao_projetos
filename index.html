@@ -716,6 +716,40 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
+/* ═══ CONFIGURAÇÕES ═══════════════════════════════ */
+.cfg-tabs { display:flex; gap:.35rem; margin-bottom:1.25rem; flex-shrink:0; flex-wrap:wrap; }
+.cfg-tab { padding:.45rem 1.1rem; border-radius:var(--radius-sm); font-size:.78rem; font-weight:700; border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; transition:.15s; font-family:var(--font); }
+.cfg-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.cfg-panel { display:none; flex-direction:column; gap:1rem; }
+.cfg-panel.active { display:flex; }
+.cfg-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.5rem; }
+.cfg-card h4 { font-size:.85rem; font-weight:800; color:var(--text); margin-bottom:1rem; display:flex; align-items:center; gap:.4rem; }
+.cfg-card h4 i { color:var(--accent); }
+.cfg-hint { font-size:.7rem; color:var(--muted); margin:-.5rem 0 .85rem; }
+.cfg-add-row { display:flex; gap:.5rem; margin-bottom:1rem; }
+.cfg-add-row input { flex:1; padding:.5rem .75rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:.82rem; font-family:var(--font); color:var(--text); background:var(--surface); outline:none; transition:.15s; }
+.cfg-add-row input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(56,118,155,.1); }
+.cfg-add-btn { padding:.5rem 1rem; background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); font-size:.8rem; font-weight:700; font-family:var(--font); cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:.35rem; transition:.15s; }
+.cfg-add-btn:hover { background:#253047; }
+.cfg-list { display:flex; flex-direction:column; gap:.35rem; max-height:320px; overflow-y:auto; }
+.cfg-item { display:flex; align-items:center; justify-content:space-between; padding:.45rem .75rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:#fafbfc; }
+.cfg-item span { font-size:.82rem; color:var(--text); }
+.cfg-del { background:none; border:none; color:var(--subtle); cursor:pointer; font-size:.9rem; padding:.2rem .35rem; border-radius:4px; transition:.15s; line-height:1; }
+.cfg-del:hover { color:var(--danger); background:rgba(239,68,68,.08); }
+.cfg-empty { font-size:.8rem; color:var(--muted); text-align:center; padding:1rem; }
+.usr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:.75rem; }
+.usr-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; display:flex; align-items:center; gap:.85rem; }
+.usr-av { width:38px; height:38px; border-radius:50%; background:var(--accent-light); color:var(--accent); display:grid; place-items:center; font-weight:800; font-size:.95rem; flex-shrink:0; }
+.usr-info { flex:1; min-width:0; }
+.usr-email { font-size:.8rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.usr-role { font-size:.68rem; color:var(--muted); margin-top:.15rem; }
+.usr-actions { display:flex; gap:.35rem; flex-shrink:0; }
+.btn-usr { padding:.3rem .55rem; border-radius:6px; font-size:.72rem; font-weight:700; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-family:var(--font); transition:.15s; display:flex; align-items:center; gap:.3rem; }
+.btn-usr:hover { background:var(--bg); }
+.btn-usr.is-admin { background:var(--primary); color:#fff; border-color:var(--primary); }
+.btn-usr.danger { color:var(--danger); border-color:rgba(239,68,68,.3); }
+.btn-usr.danger:hover { background:rgba(239,68,68,.07); }
+
 /* Responsive */
 @media(max-width:1200px) { .col-3{grid-column:span 4;} .col-6{grid-column:span 8;} .charts-grid .span-2{grid-column:span 1;} }
 @media(max-width:900px) {
@@ -792,6 +826,12 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <i class="bi bi-pie-chart"></i>Indicadores</button></li>
       </ul>
 
+      <div class="sb-section">Sistema</div>
+      <ul class="nav-pills">
+        <li><button class="nav-link admin-only" onclick="switchView('config')">
+          <i class="bi bi-gear"></i>Configurações</button></li>
+      </ul>
+
       <div class="sb-footer">
         <div class="sb-user">
           <div class="sb-avatar" id="sbAvatar">?</div>
@@ -832,11 +872,8 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
             <div class="f-row">
               <div class="f-grp">
                 <label>1. Área</label>
-                <select name="area" required>
-                  <option value="">Selecione...</option>
-                  <option>PQI</option><option>RH</option><option>Comercial</option>
-                  <option>Logística</option><option>CX</option><option>E-commerce</option>
-                  <option>Jurídico</option><option>TI</option>
+                <select name="area" id="cadProjArea" required>
+                  <option value="">Carregando...</option>
                 </select>
               </div>
               <div class="f-grp">
@@ -891,10 +928,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Acionamento de</label><input type="date" id="fvpDtIni"></div>
           <div class="fb-grp"><label>Até</label><input type="date" id="fvpDtFim"></div>
           <div class="fb-grp"><label>Área</label>
-            <select id="fvpArea"><option value="">Todas</option>
-              <option>PQI</option><option>RH</option><option>Comercial</option>
-              <option>Logística</option><option>CX</option><option>E-commerce</option>
-              <option>Jurídico</option><option>TI</option></select></div>
+            <select id="fvpArea"><option value="">Todas</option></select></div>
           <div class="fb-grp"><label>Prioridade</label>
             <select id="fvpPrio"><option value="">Todas</option>
               <option>Baixo</option><option>Médio</option><option>Alto</option></select></div>
@@ -919,10 +953,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Acionamento de</label><input type="date" id="fipDtIni"></div>
           <div class="fb-grp"><label>Até</label><input type="date" id="fipDtFim"></div>
           <div class="fb-grp"><label>Área</label>
-            <select id="fipArea"><option value="">Todas</option>
-              <option>PQI</option><option>RH</option><option>Comercial</option>
-              <option>Logística</option><option>CX</option><option>E-commerce</option>
-              <option>Jurídico</option><option>TI</option></select></div>
+            <select id="fipArea"><option value="">Todas</option></select></div>
           <div class="fb-grp"><label>Status</label>
             <select id="fipStatus"><option value="">Todos</option>
               <option>Não Iniciado</option><option>Em Andamento</option>
@@ -945,9 +976,8 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
             <div class="f-row">
               <div class="f-grp">
                 <label>1. Condutor</label>
-                <select name="condutor" required>
-                  <option value="">Selecione...</option>
-                  <option>Denise</option><option>Guilherme</option><option>Karla</option><option>Wendley</option>
+                <select name="condutor" id="cadAtvCondutor" required>
+                  <option value="">Carregando...</option>
                 </select>
               </div>
               <div class="f-grp">
@@ -973,15 +1003,8 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
               </div>
               <div class="f-grp">
                 <label>5. Área Demandada</label>
-                <select name="area" required>
-                  <option value="">Selecione...</option>
-                  <option>Diretoria</option><option>Jurídico</option><option>Marketing</option>
-                  <option>Compliance</option><option>Comercial</option><option>Financeiro</option>
-                  <option>Facilities</option><option>Contabilidade</option><option>Fiscal</option>
-                  <option>Qualidade</option><option>Compras</option><option>TI</option>
-                  <option>Vendas Internas</option><option>Monitoramento</option>
-                  <option>Manutenção</option><option>RH</option><option>CX</option>
-                  <option>PQI</option><option>Logística</option>
+                <select name="area" id="cadAtvArea" required>
+                  <option value="">Carregando...</option>
                 </select>
               </div>
             </div>
@@ -1015,15 +1038,9 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Projeto</label>
             <select id="fvaProjeto"><option value="">Todos</option></select></div>
           <div class="fb-grp"><label>Condutor</label>
-            <select id="fvaCondutor"><option value="">Todos</option>
-              <option>Denise</option><option>Guilherme</option><option>Karla</option><option>Wendley</option>
-            </select></div>
+            <select id="fvaCondutor"><option value="">Todos</option></select></div>
           <div class="fb-grp"><label>Área</label>
-            <select id="fvaArea"><option value="">Todas</option>
-              <option>Diretoria</option><option>Jurídico</option><option>Marketing</option>
-              <option>Compliance</option><option>Comercial</option><option>Financeiro</option>
-              <option>TI</option><option>RH</option><option>CX</option><option>Logística</option>
-            </select></div>
+            <select id="fvaArea"><option value="">Todas</option></select></div>
           <div class="fb-grp"><label>Prioridade</label>
             <select id="fvaPrio"><option value="">Todas</option>
               <option>Baixo</option><option>Médio</option><option>Alto</option></select></div>
@@ -1044,15 +1061,9 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Prazo de</label><input type="date" id="fiaDtIni"></div>
           <div class="fb-grp"><label>Até</label><input type="date" id="fiaDtFim"></div>
           <div class="fb-grp"><label>Condutor</label>
-            <select id="fiaCondutor"><option value="">Todos</option>
-              <option>Denise</option><option>Guilherme</option><option>Karla</option><option>Wendley</option>
-            </select></div>
+            <select id="fiaCondutor"><option value="">Todos</option></select></div>
           <div class="fb-grp"><label>Área</label>
-            <select id="fiaArea"><option value="">Todas</option>
-              <option>Diretoria</option><option>Jurídico</option><option>Marketing</option>
-              <option>Compliance</option><option>Comercial</option><option>Financeiro</option>
-              <option>TI</option><option>RH</option><option>CX</option><option>Logística</option>
-            </select></div>
+            <select id="fiaArea"><option value="">Todas</option></select></div>
           <div class="fb-grp"><label>Prioridade</label>
             <select id="fiaPrio"><option value="">Todas</option>
               <option>Baixo</option><option>Médio</option><option>Alto</option></select></div>
@@ -1063,6 +1074,66 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         </div>
         <div id="ind-atv-content" style="flex-grow:1;overflow-y:auto;">
           <div class="load-wrap" style="height:200px;"><div class="spin-lg"></div></div>
+        </div>
+      </div>
+
+      <!-- ═════ CONFIGURAÇÕES ═════ -->
+      <div class="view view-ind" id="view-config">
+        <div class="cfg-tabs">
+          <button class="cfg-tab active" onclick="cfgTab('areas-proj',this)"><i class="bi bi-buildings"></i> Áreas · Projetos</button>
+          <button class="cfg-tab" onclick="cfgTab('areas-atv',this)"><i class="bi bi-buildings"></i> Áreas · Atividades</button>
+          <button class="cfg-tab" onclick="cfgTab('condutores',this)"><i class="bi bi-person-badge"></i> Condutores</button>
+          <button class="cfg-tab" onclick="cfgTab('usuarios',this)"><i class="bi bi-people"></i> Usuários</button>
+        </div>
+
+        <!-- Áreas Projetos -->
+        <div class="cfg-panel active" id="cfgp-areas-proj">
+          <div class="cfg-card">
+            <h4><i class="bi bi-buildings"></i>Áreas de Projetos</h4>
+            <div class="cfg-add-row">
+              <input type="text" id="cfgNewAreaProj" placeholder="Ex: Marketing, Financeiro..." onkeydown="if(event.key==='Enter')addArea('projeto')">
+              <button class="cfg-add-btn" onclick="addArea('projeto')"><i class="bi bi-plus-lg"></i>Adicionar</button>
+            </div>
+            <div class="cfg-list" id="cfgListAreaProj"><div class="cfg-empty"><div class="spin-lg"></div></div></div>
+          </div>
+        </div>
+
+        <!-- Áreas Atividades -->
+        <div class="cfg-panel" id="cfgp-areas-atv">
+          <div class="cfg-card">
+            <h4><i class="bi bi-buildings"></i>Áreas de Atividades</h4>
+            <div class="cfg-add-row">
+              <input type="text" id="cfgNewAreaAtv" placeholder="Ex: Compliance, Fiscal..." onkeydown="if(event.key==='Enter')addArea('atividade')">
+              <button class="cfg-add-btn" onclick="addArea('atividade')"><i class="bi bi-plus-lg"></i>Adicionar</button>
+            </div>
+            <div class="cfg-list" id="cfgListAreaAtv"><div class="cfg-empty"><div class="spin-lg"></div></div></div>
+          </div>
+        </div>
+
+        <!-- Condutores -->
+        <div class="cfg-panel" id="cfgp-condutores">
+          <div class="cfg-card">
+            <h4><i class="bi bi-person-badge"></i>Condutores</h4>
+            <div class="cfg-add-row">
+              <input type="text" id="cfgNewCondutor" placeholder="Nome do condutor..." onkeydown="if(event.key==='Enter')addCondutor()">
+              <button class="cfg-add-btn" onclick="addCondutor()"><i class="bi bi-plus-lg"></i>Adicionar</button>
+            </div>
+            <div class="cfg-list" id="cfgListCondutor"><div class="cfg-empty"><div class="spin-lg"></div></div></div>
+          </div>
+        </div>
+
+        <!-- Usuários -->
+        <div class="cfg-panel" id="cfgp-usuarios">
+          <div class="cfg-card">
+            <h4><i class="bi bi-person-plus"></i>Adicionar Usuário</h4>
+            <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p>
+            <div class="cfg-add-row">
+              <input type="email" id="cfgNewUsrEmail" placeholder="email@empresa.com">
+              <input type="password" id="cfgNewUsrPass" placeholder="Senha..." style="max-width:160px;">
+              <button class="cfg-add-btn" onclick="addUsuario()"><i class="bi bi-person-plus"></i>Criar</button>
+            </div>
+          </div>
+          <div class="usr-grid" id="cfgListUsuarios"><div class="cfg-empty"><div class="spin-lg"></div></div></div>
         </div>
       </div>
 
@@ -1085,9 +1156,6 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="f-grp"><label>Área</label>
             <select id="epArea" required>
               <option value="">Selecione...</option>
-              <option>PQI</option><option>RH</option><option>Comercial</option>
-              <option>Logística</option><option>CX</option><option>E-commerce</option>
-              <option>Jurídico</option><option>TI</option>
             </select></div>
           <div class="f-grp"><label>Prioridade</label>
             <select id="epPrio" required>
@@ -1158,7 +1226,6 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="f-grp"><label>Condutor</label>
             <select id="eaCondutor" required>
               <option value="">Selecione...</option>
-              <option>Denise</option><option>Guilherme</option><option>Karla</option><option>Wendley</option>
             </select></div>
           <div class="f-grp"><label>Projeto</label>
             <select id="eaProjeto" required><option value="">Carregando...</option></select></div>
@@ -1174,13 +1241,6 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="f-grp"><label>Área</label>
             <select id="eaArea">
               <option value="">Selecione...</option>
-              <option>Diretoria</option><option>Jurídico</option><option>Marketing</option>
-              <option>Compliance</option><option>Comercial</option><option>Financeiro</option>
-              <option>Facilities</option><option>Contabilidade</option><option>Fiscal</option>
-              <option>Qualidade</option><option>Compras</option><option>TI</option>
-              <option>Vendas Internas</option><option>Monitoramento</option>
-              <option>Manutenção</option><option>RH</option><option>CX</option>
-              <option>PQI</option><option>Logística</option>
             </select></div>
         </div>
         <div class="f-row"><div class="f-grp full"><label>Executor</label>
@@ -1317,6 +1377,7 @@ async function initApp(user) {
   document.getElementById('topMeta').textContent  = new Date().toLocaleString('pt-BR');
   if (ADMIN) document.body.classList.add('is-admin');
   await loadProjetos();
+  await populateSelects();
   loadExecSugest();
   switchView('vis-proj');
 }
@@ -1345,7 +1406,8 @@ const VIEW_META = {
   'ind-proj': { title:'Indicadores · Projetos', icon:'bi-graph-up' },
   'cad-atv':  { title:'Cadastrar Atividade',    icon:'bi-plus-circle' },
   'vis-atv':  { title:'Visualizar Atividades',  icon:'bi-list-check' },
-  'ind-atv':  { title:'Indicadores · Atividades',icon:'bi-pie-chart' }
+  'ind-atv':  { title:'Indicadores · Atividades',icon:'bi-pie-chart' },
+  'config':   { title:'Configurações',          icon:'bi-gear' }
 };
 
 function switchView(v) {
@@ -1363,6 +1425,7 @@ function switchView(v) {
   if (v==='ind-proj') loadIndProj();
   if (v==='vis-atv')  loadAtv();
   if (v==='ind-atv')  loadIndAtv();
+  if (v==='config')   loadConfig();
 }
 
 /* ─── UTILS ─────────────────────────────── */
@@ -2224,6 +2287,145 @@ function renderTblDrill(list){
   </tr>`;});
   html+='</tbody></table>';
   document.getElementById('ddTblArea').innerHTML=html;
+}
+
+/* ─── POPULATE SELECTS ──────────────────── */
+async function populateSelects() {
+  if (USER?._isFake) return; // fake login: sem Supabase
+  const [{ data: areas }, { data: condutores }] = await Promise.all([
+    db.from('bi_areas').select('*').order('nome'),
+    db.from('bi_condutores').select('*').order('nome')
+  ]);
+  const aProj = (areas||[]).filter(a=>a.tipo==='projeto');
+  const aAtv  = (areas||[]).filter(a=>a.tipo==='atividade');
+  const mkOpts = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
+  const mkCond = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
+  ['cadProjArea','epArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,null); });
+  ['fvpArea','fipArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,'Todas'); });
+  ['cadAtvArea','eaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,null); });
+  ['fvaArea','fiaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,'Todas'); });
+  ['cadAtvCondutor','eaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],null); });
+  ['fvaCondutor','fiaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],'Todos'); });
+}
+
+/* ─── CONFIG TABS ───────────────────────── */
+function cfgTab(id, btn) {
+  document.querySelectorAll('.cfg-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.cfg-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('cfgp-'+id).classList.add('active');
+}
+
+async function loadConfig() {
+  await Promise.all([loadConfigAreas(), loadConfigCondutores(), loadConfigUsuarios()]);
+}
+
+/* ─── AREAS ─────────────────────────────── */
+async function loadConfigAreas() {
+  const { data } = await db.from('bi_areas').select('*').order('nome');
+  const proj = (data||[]).filter(a=>a.tipo==='projeto');
+  const atv  = (data||[]).filter(a=>a.tipo==='atividade');
+  const renderList = (list, tipo) => list.length
+    ? list.map(a=>`<div class="cfg-item"><span>${esc(a.nome)}</span><button class="cfg-del" onclick="delArea(${a.id},'${tipo}')" title="Remover"><i class="bi bi-trash"></i></button></div>`).join('')
+    : '<div class="cfg-empty">Nenhuma área cadastrada.</div>';
+  document.getElementById('cfgListAreaProj').innerHTML = renderList(proj,'projeto');
+  document.getElementById('cfgListAreaAtv').innerHTML  = renderList(atv,'atividade');
+}
+
+async function addArea(tipo) {
+  const inputId = tipo==='projeto'?'cfgNewAreaProj':'cfgNewAreaAtv';
+  const nome = document.getElementById(inputId).value.trim();
+  if (!nome) return;
+  const { error } = await db.from('bi_areas').insert([{ nome, tipo }]);
+  if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
+  document.getElementById(inputId).value = '';
+  await Promise.all([loadConfigAreas(), populateSelects()]);
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:'Área adicionada!',showConfirmButton:false,timer:2000});
+}
+
+async function delArea(id, tipo) {
+  const r = await Swal.fire({title:'Remover área?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
+  if (!r.isConfirmed) return;
+  await db.from('bi_areas').delete().eq('id',id);
+  await Promise.all([loadConfigAreas(), populateSelects()]);
+}
+
+/* ─── CONDUTORES ────────────────────────── */
+async function loadConfigCondutores() {
+  const { data } = await db.from('bi_condutores').select('*').order('nome');
+  document.getElementById('cfgListCondutor').innerHTML = (data||[]).length
+    ? (data||[]).map(c=>`<div class="cfg-item"><span>${esc(c.nome)}</span><button class="cfg-del" onclick="delCondutor(${c.id})" title="Remover"><i class="bi bi-trash"></i></button></div>`).join('')
+    : '<div class="cfg-empty">Nenhum condutor cadastrado.</div>';
+}
+
+async function addCondutor() {
+  const nome = document.getElementById('cfgNewCondutor').value.trim();
+  if (!nome) return;
+  const { error } = await db.from('bi_condutores').insert([{ nome }]);
+  if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
+  document.getElementById('cfgNewCondutor').value = '';
+  await Promise.all([loadConfigCondutores(), populateSelects()]);
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:'Condutor adicionado!',showConfirmButton:false,timer:2000});
+}
+
+async function delCondutor(id) {
+  const r = await Swal.fire({title:'Remover condutor?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
+  if (!r.isConfirmed) return;
+  await db.from('bi_condutores').delete().eq('id',id);
+  await Promise.all([loadConfigCondutores(), populateSelects()]);
+}
+
+/* ─── USUÁRIOS ──────────────────────────── */
+async function loadConfigUsuarios() {
+  const { data, error } = await db.from('profiles').select('*').order('email');
+  const el = document.getElementById('cfgListUsuarios');
+  if (error||!data?.length) { el.innerHTML='<div class="cfg-empty">Nenhum usuário encontrado.</div>'; return; }
+  el.className = 'usr-grid';
+  el.innerHTML = data.map(u=>{
+    const init=(u.email||'?')[0].toUpperCase();
+    const isSelf=u.id===USER?.id;
+    return `<div class="usr-card">
+      <div class="usr-av">${init}</div>
+      <div class="usr-info">
+        <div class="usr-email" title="${esc(u.email)}">${esc(u.email||'—')}</div>
+        <div class="usr-role">${u.is_admin?'⭐ Administrador':'Visualizador'}</div>
+      </div>
+      <div class="usr-actions">
+        <button class="btn-usr ${u.is_admin?'is-admin':''}" onclick="toggleAdmin('${u.id}',${u.is_admin})" title="${u.is_admin?'Remover admin':'Tornar admin'}">
+          <i class="bi bi-shield${u.is_admin?'-fill':'-check'}"></i>${u.is_admin?'Admin':'Admin?'}
+        </button>
+        ${!isSelf?`<button class="btn-usr danger" onclick="confirmDelUsuario('${u.id}','${esc(u.email||'')}')"><i class="bi bi-person-x"></i></button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addUsuario() {
+  const email = document.getElementById('cfgNewUsrEmail').value.trim();
+  const pass  = document.getElementById('cfgNewUsrPass').value;
+  if (!email||!pass) { Swal.fire({toast:true,position:'top-end',icon:'warning',title:'Preencha e-mail e senha.',showConfirmButton:false,timer:2500}); return; }
+  const { data, error } = await db.auth.signUp({ email, password: pass });
+  if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:4000}); return; }
+  if (data?.user?.id) await db.from('profiles').upsert({ id:data.user.id, email, is_admin:false });
+  document.getElementById('cfgNewUsrEmail').value='';
+  document.getElementById('cfgNewUsrPass').value='';
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:'Usuário criado!',showConfirmButton:false,timer:2500});
+  await loadConfigUsuarios();
+}
+
+async function toggleAdmin(id, current) {
+  const { error } = await db.from('profiles').update({ is_admin:!current }).eq('id',id);
+  if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
+  await loadConfigUsuarios();
+}
+
+async function confirmDelUsuario(id, email) {
+  const r = await Swal.fire({title:'Remover usuário?',html:`<b>${esc(email)}</b> perderá o acesso ao sistema.`,icon:'warning',width:'360px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
+  if (!r.isConfirmed) return;
+  // Remove da tabela profiles — o usuário fica na Auth mas sem perfil, sem acesso
+  await db.from('profiles').delete().eq('id',id);
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:'Acesso removido.',showConfirmButton:false,timer:2500});
+  await loadConfigUsuarios();
 }
 
 /* ─── MODAL HELPERS ─────────────────────── */
