@@ -1566,7 +1566,7 @@ function computeAtvStatus(a) {
 
 /* ─── SUPABASE DATA ─────────────────────── */
 async function loadProjetos() {
-  const { data } = await db.from('bi_projetosac').select('id,melhoria').order('id',{ascending:false});
+  const { data } = await db.from('bi_projetosac').select('id,nome_projeto').order('id',{ascending:false});
   PROJETOS = data || [];
   const opts = '<option value="">Selecione o Projeto...</option>' +
     PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,60))}</option>`).join('');
