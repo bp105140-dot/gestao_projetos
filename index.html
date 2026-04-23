@@ -1126,7 +1126,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="cfg-panel" id="cfgp-usuarios">
           <div class="cfg-card">
             <h4><i class="bi bi-person-plus"></i>Adicionar Usuário</h4>
-            <!-- <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p> -->
+            <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p>
             <div class="cfg-add-row">
               <input type="email" id="cfgNewUsrEmail" placeholder="email@empresa.com">
               <input type="password" id="cfgNewUsrPass" placeholder="Senha..." style="max-width:160px;">
@@ -1299,7 +1299,9 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 /* ──────────────────────────────────────── */
 
 const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+});
 
 Chart.register(ChartDataLabels);
 Chart.defaults.font.family = "'Inter', sans-serif";
@@ -1314,13 +1316,40 @@ window._atvList = [];
 
 /* ─── AUTH ──────────────────────────────── */
 
-/* ⚠️  FAKE LOGIN — apenas para desenvolvimento local.
-       Remova este bloco antes de publicar em produção.
-   Credenciais: admin@admin  /  123456  (acesso Admin)          */
-const FAKE_USERS = [
-  { email: 'admin@admin', password: '123456', isAdmin: true }
-];
-/* ─────────────────────────────────────────────────────────── */
+/* Fake login para desenvolvimento — remove em produção.
+   Credenciais: admin@admin / 123456                     */
+const FAKE_USERS  = [{ email:'admin@admin', password:'123456', isAdmin:true }];
+const _FAKE_KEY   = 'bi_fake_sess';
+
+/* ─── INATIVIDADE: logout após 20 min sem interação ─── */
+const INACT_MS = 20 * 60 * 1000;   /* 20 minutos */
+let   _inactTimer = null;
+
+function _resetInact() {
+  if (!USER) return;
+  clearTimeout(_inactTimer);
+  _inactTimer = setTimeout(() => {
+    Swal.fire({
+      title: 'Sessão encerrada',
+      text: '20 minutos sem atividade. Faça login novamente.',
+      icon: 'info', confirmButtonText: 'OK',
+      allowOutsideClick: false, allowEscapeKey: false
+    }).then(() => doLogout());
+  }, INACT_MS);
+}
+
+function _startInact() {
+  ['mousemove','mousedown','keydown','touchstart','scroll','click']
+    .forEach(ev => document.addEventListener(ev, _resetInact, { passive: true }));
+  _resetInact();
+}
+
+function _stopInact() {
+  clearTimeout(_inactTimer);
+  ['mousemove','mousedown','keydown','touchstart','scroll','click']
+    .forEach(ev => document.removeEventListener(ev, _resetInact));
+}
+/* ─────────────────────────────────────────────────────── */
 
 async function doLogin() {
   const email = document.getElementById('lEmail').value.trim();
@@ -1330,19 +1359,13 @@ async function doLogin() {
   errEl.classList.remove('show');
   btn.innerHTML = '<span class="spin"></span> Entrando...'; btn.disabled = true;
 
-  /* ── Verifica credenciais fake ── */
+  /* Fake login */
   const fake = FAKE_USERS.find(u => u.email === email && u.password === pass);
   if (fake) {
-    const fakeUser = {
-      id: '00000000-0000-0000-0000-000000000000',
-      email: fake.email,
-      _isFake: true,
-      _isAdmin: fake.isAdmin
-    };
-    await initApp(fakeUser);
-    return;
+    const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:fake.email, _isFake:true, _isAdmin:fake.isAdmin };
+    localStorage.setItem(_FAKE_KEY, JSON.stringify({ email:fake.email, isAdmin:fake.isAdmin }));
+    await initApp(fakeUser); return;
   }
-  /* ────────────────────────────── */
 
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
@@ -1354,19 +1377,24 @@ async function doLogin() {
     btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Entrar'; btn.disabled = false;
   }
 }
+
 async function doLogout() {
+  _stopInact();
+  localStorage.removeItem(_FAKE_KEY);
   if (USER?._isFake) { USER = null; location.reload(); return; }
   await db.auth.signOut(); location.reload();
 }
+
 async function checkAdmin(uid) {
-  /* Fake user: usa flag interna, sem consulta ao Supabase */
   if (USER?._isFake) return USER._isAdmin === true;
   try {
     const { data } = await db.from('profiles').select('is_admin').eq('id', uid).single();
     return data?.is_admin === true;
   } catch { return false; }
 }
+
 async function initApp(user) {
+  if (USER) return;                             /* evita dupla inicialização */
   USER = user; ADMIN = await checkAdmin(user.id);
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -1376,17 +1404,40 @@ async function initApp(user) {
   document.getElementById('sbRole').textContent   = ADMIN ? 'Administrador' : 'Visualizador';
   document.getElementById('topMeta').textContent  = new Date().toLocaleString('pt-BR');
   if (ADMIN) document.body.classList.add('is-admin');
+  _startInact();                                 /* inicia timer de inatividade */
   await loadProjetos();
-  await populateSelects();
+  populateSelects();
   loadExecSugest();
   switchView('vis-proj');
 }
-db.auth.onAuthStateChange((ev, sess) => { if (ev==='SIGNED_IN' && sess?.user && !USER) initApp(sess.user); });
-(async () => { const { data:{session} } = await db.auth.getSession(); if (session?.user) await initApp(session.user); })();
+
+/* Escuta TODOS os eventos de sessão relevantes */
+db.auth.onAuthStateChange((ev, sess) => {
+  if (['SIGNED_IN','INITIAL_SESSION','TOKEN_REFRESHED'].includes(ev) && sess?.user && !USER) {
+    initApp(sess.user);
+  }
+});
+
+/* Ao carregar a página: tenta restaurar sessão fake ou Supabase */
+(async () => {
+  /* 1. Fake session gravada no localStorage */
+  try {
+    const saved = localStorage.getItem(_FAKE_KEY);
+    if (saved) {
+      const p = JSON.parse(saved);
+      const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:p.email, _isFake:true, _isAdmin:p.isAdmin };
+      await initApp(fakeUser); return;
+    }
+  } catch(_) {}
+  /* 2. Sessão real Supabase */
+  const { data:{ session } } = await db.auth.getSession();
+  if (session?.user) await initApp(session.user);
+})();
+
 document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('lEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('lPass').focus(); });
 
-/* ⚠️  Preenche automaticamente o login fake — remova em produção */
+/* Preenche login fake automaticamente — remove em produção */
 (function(){
   document.getElementById('lEmail').value = 'admin@admin';
   document.getElementById('lPass').value  = '123456';
@@ -2005,54 +2056,29 @@ function mkDonut(id,labels,values,colors,isModal=false){
 }
 
 function mkMisto(id,labels,qtds,total,onClickFn){
-  const pcts = qtds.map(v => parseFloat(((v/(total||1))*100).toFixed(1)));
-  const canvasEl = document.getElementById(id);
-  const wrapper  = canvasEl && canvasEl.parentElement;
-  /* altura dinâmica: 32px por barra, mínimo 100px */
-  if (wrapper) {
-    const h = Math.max(100, labels.length * 32);
-    wrapper.style.height    = h + 'px';
-    wrapper.style.overflowY = 'hidden';
-    wrapper.style.minHeight = 'unset';
-  }
-  const ch = new Chart(canvasEl, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Qtd', data: qtds,
-        backgroundColor: '#38769b', hoverBackgroundColor: '#2d6488',
-        borderRadius: 4, barThickness: 20,
-        datalabels: {
-          anchor:'end', align:'end',
-          color:'#1e293b', font:{size:10, weight:'700'},
-          offset:4, formatter: v => v
-        }
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend:{display:false}, tooltip:tipCfg },
-      scales: {
-        y: { grid:{display:false}, ticks:{color:'#64748b', font:{size:10}, autoSkip:false, maxRotation:0} },
-        x: { display:false, grace:'25%' }
-      },
-      layout: { padding:{right:46} },
-      onClick: onClickFn || undefined
-    }
-  });
-  chartsMap[id] = { chart:ch, qtds, pcts };
-  return ch;
+  const pcts=qtds.map(v=>((v/(total||1))*100).toFixed(1));
+  const maxP=Math.max(...pcts.map(Number))||1;
+  const ch=new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:labels.map(l=>trunc(l,15)),
+      datasets:[
+        {type:'line',label:'%',data:pcts,borderColor:'#f59e0b',backgroundColor:'#f59e0b',borderWidth:2,pointRadius:3,yAxisID:'y1',datalabels:{display:false},order:1},
+        {type:'bar',label:'Qtd',data:qtds,backgroundColor:'#38769b',borderRadius:4,barPercentage:.6,yAxisID:'y',order:2,
+          datalabels:{align:'end',anchor:'end',color:'#1e293b',font:{size:10,weight:'bold'},offset:2,formatter:v=>v}}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:tipCfg},
+      scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}},y:{display:false,grace:'25%'},y1:{display:false,min:0,max:maxP*2.8}},
+      layout:{padding:{top:22}},onClick:onClickFn||undefined}});
+  chartsMap[id]={chart:ch,qtds,pcts}; return ch;
 }
 
 function toggleModo(id,btn){
   const info=chartsMap[id]; if(!info) return;
   btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-  const isPct = btn.textContent.trim() === '%';
-  const ds = info.chart.data.datasets[0];   /* dataset único nas barras horizontais */
-  ds.data = isPct ? info.pcts : info.qtds;
-  ds.datalabels.formatter = isPct ? v => v + '%' : v => v;
+  const isPct=btn.textContent.trim()==='%', ds=info.chart.data.datasets[1];
+  ds.data=isPct?info.pcts:info.qtds;
+  ds.datalabels.formatter=isPct?v=>v+'%':v=>v;
+  info.chart.options.scales.y.max=(Math.max(...ds.data.map(Number))||1)*1.4;
   info.chart.update();
 }
 
@@ -2099,9 +2125,9 @@ function renderIndAtv(list){
   `<div class="proj-row"><div class="chart-card"><div class="chart-hdr">
     <div class="chart-title"><i class="bi bi-bar-chart-steps"></i>Projetos Relacionados</div>
     <div class="toggle-mode"><button class="active" onclick="toggleModo('chProj',this)">Qtd</button><button onclick="toggleModo('chProj',this)">%</button></div>
-  </div><div class="chart-body" style="overflow:hidden;"><canvas id="chProj"></canvas></div></div></div>
+  </div><div class="chart-body" style="height:150px;"><canvas id="chProj"></canvas></div></div></div>
 
-  <div class="dash-grid" style="grid-template-rows:260px 320px 280px;">
+  <div class="dash-grid" style="grid-template-rows:260px 240px 280px;">
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-person-circle"></i>Condutores</div></div><div class="chart-body"><canvas id="chCond"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-flag"></i>Prioridades</div></div><div class="chart-body"><canvas id="chPrio2"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-circle-half"></i>Status Geral</div></div><div class="chart-body"><canvas id="chStat"></canvas></div></div>
