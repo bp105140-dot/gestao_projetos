@@ -1126,7 +1126,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="cfg-panel" id="cfgp-usuarios">
           <div class="cfg-card">
             <h4><i class="bi bi-person-plus"></i>Adicionar Usuário</h4>
-            <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p>
+            <!-- <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p> -->
             <div class="cfg-add-row">
               <input type="email" id="cfgNewUsrEmail" placeholder="email@empresa.com">
               <input type="password" id="cfgNewUsrPass" placeholder="Senha..." style="max-width:160px;">
@@ -1437,11 +1437,11 @@ db.auth.onAuthStateChange((ev, sess) => {
 document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('lEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('lPass').focus(); });
 
-/* Preenche login fake automaticamente — remove em produção */
-(function(){
-  document.getElementById('lEmail').value = 'admin@admin';
-  document.getElementById('lPass').value  = '123456';
-})();
+// /* Preenche login fake automaticamente — remove em produção */
+// (function(){
+//   document.getElementById('lEmail').value = 'admin@admin';
+//   document.getElementById('lPass').value  = '123456';
+// })();
 
 /* ─── SIDEBAR TOGGLE ────────────────────── */
 document.getElementById('sbToggle').addEventListener('click', () => {
