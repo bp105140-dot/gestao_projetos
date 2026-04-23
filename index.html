@@ -1377,7 +1377,7 @@ async function initApp(user) {
   document.getElementById('topMeta').textContent  = new Date().toLocaleString('pt-BR');
   if (ADMIN) document.body.classList.add('is-admin');
   await loadProjetos();
-  await populateSelects();
+  populateSelects();
   loadExecSugest();
   switchView('vis-proj');
 }
@@ -2290,22 +2290,33 @@ function renderTblDrill(list){
 }
 
 /* ─── POPULATE SELECTS ──────────────────── */
-async function populateSelects() {
-  if (USER?._isFake) return; // fake login: sem Supabase
-  const [{ data: areas }, { data: condutores }] = await Promise.all([
-    db.from('bi_areas').select('*').order('nome'),
-    db.from('bi_condutores').select('*').order('nome')
-  ]);
-  const aProj = (areas||[]).filter(a=>a.tipo==='projeto');
-  const aAtv  = (areas||[]).filter(a=>a.tipo==='atividade');
-  const mkOpts = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
-  const mkCond = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
-  ['cadProjArea','epArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,null); });
-  ['fvpArea','fipArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,'Todas'); });
-  ['cadAtvArea','eaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,null); });
-  ['fvaArea','fiaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,'Todas'); });
-  ['cadAtvCondutor','eaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],null); });
-  ['fvaCondutor','fiaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],'Todos'); });
+/* ─── LISTAS FIXAS (mesmos valores do PHP original) ─── */
+const AREAS_PROJ = ['PQI','RH','Comercial','Logística','CX','E-commerce','Jurídico','TI'];
+const AREAS_ATV  = ['Diretoria','Jurídico','Marketing','Compliance','Comercial','Financeiro',
+                    'Facilities','Contabilidade','Fiscal','Qualidade','Compras','TI',
+                    'Vendas Internas','Monitoramento','Manutenção','RH','CX','PQI','Logística'];
+const CONDUTORES = ['Denise','Guilherme','Karla','Wendley'];
+const STATUS_PROJ= ['Não Iniciado','Em Andamento','Pausado','Atrasado','Cancelado','Concluído'];
+
+function populateSelects() {
+  const mkArea  = (arr, all) => (all ? `<option value="">${all}</option>` : '<option value="">Selecione a Área...</option>') + arr.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  const mkCond  = (arr, all) => (all ? `<option value="">${all}</option>` : '<option value="">Selecione...</option>') + arr.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  const mkStatus= (arr, all) => (all ? `<option value="">${all}</option>` : '<option value="">Selecione...</option>') + arr.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+
+  /* Áreas de projetos — formulários e filtros */
+  ['cadProjArea','epArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkArea(AREAS_PROJ,null); });
+  ['fvpArea','fipArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkArea(AREAS_PROJ,'Todas'); });
+
+  /* Áreas de atividades — formulários e filtros */
+  ['cadAtvArea','eaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkArea(AREAS_ATV,null); });
+  ['fvaArea','fiaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkArea(AREAS_ATV,'Todas'); });
+
+  /* Condutores — formulários e filtros */
+  ['cadAtvCondutor','eaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(CONDUTORES,null); });
+  ['fvaCondutor','fiaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(CONDUTORES,'Todos'); });
+
+  /* Status projetos — filtros */
+  ['fvpStatus','fipStatus'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkStatus(STATUS_PROJ,'Todos'); });
 }
 
 /* ─── CONFIG TABS ───────────────────────── */
@@ -2339,7 +2350,7 @@ async function addArea(tipo) {
   const { error } = await db.from('bi_areas').insert([{ nome, tipo }]);
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById(inputId).value = '';
-  await Promise.all([loadConfigAreas(), populateSelects()]);
+  await loadConfigAreas(); populateSelects();
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'Área adicionada!',showConfirmButton:false,timer:2000});
 }
 
@@ -2347,7 +2358,7 @@ async function delArea(id, tipo) {
   const r = await Swal.fire({title:'Remover área?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_areas').delete().eq('id',id);
-  await Promise.all([loadConfigAreas(), populateSelects()]);
+  await loadConfigAreas(); populateSelects();
 }
 
 /* ─── CONDUTORES ────────────────────────── */
@@ -2364,7 +2375,7 @@ async function addCondutor() {
   const { error } = await db.from('bi_condutores').insert([{ nome }]);
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById('cfgNewCondutor').value = '';
-  await Promise.all([loadConfigCondutores(), populateSelects()]);
+  await loadConfigCondutores(); populateSelects();
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'Condutor adicionado!',showConfirmButton:false,timer:2000});
 }
 
@@ -2372,7 +2383,7 @@ async function delCondutor(id) {
   const r = await Swal.fire({title:'Remover condutor?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_condutores').delete().eq('id',id);
-  await Promise.all([loadConfigCondutores(), populateSelects()]);
+  await loadConfigCondutores(); populateSelects();
 }
 
 /* ─── USUÁRIOS ──────────────────────────── */
