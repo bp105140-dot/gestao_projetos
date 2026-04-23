@@ -1569,10 +1569,10 @@ async function loadProjetos() {
   const { data } = await db.from('bi_projetosac').select('id,nome_projeto').order('id',{ascending:false});
   PROJETOS = data || [];
   const opts = '<option value="">Selecione o Projeto...</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,60))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.nome_projeto||'').substring(0,60))}</option>`).join('');
   ['cadAtvProjeto','eaProjeto'].forEach(id => document.getElementById(id).innerHTML = opts);
   const visOpts = '<option value="">Todos</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,40))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.nome_projeto||'').substring(0,40))}</option>`).join('');
   document.getElementById('fvaProjeto').innerHTML = visOpts;
 }
 
