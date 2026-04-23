@@ -1377,7 +1377,7 @@ async function initApp(user) {
   document.getElementById('topMeta').textContent  = new Date().toLocaleString('pt-BR');
   if (ADMIN) document.body.classList.add('is-admin');
   await loadProjetos();
-  populateSelects();
+  await populateSelects();
   loadExecSugest();
   switchView('vis-proj');
 }
@@ -1588,6 +1588,7 @@ async function submitCadProj(e) {
       data_acionamento:fd.get('data_acionamento')||null, data_inicio:fd.get('data_inicio')||null,
       data_implementacao:fd.get('data_implementacao')||null,
       status:fd.get('status'), situacao:fd.get('situacao')||getSit(fd.get('status')),
+      usuario_cadastro:USER.id
     }]);
     if (error) throw error;
     document.getElementById('form-cad-proj').reset();
@@ -1826,6 +1827,7 @@ async function submitCadAtv(e) {
       descricao_atividade:fd.get('descricao_atividade'), prioridade:fd.get('prioridade'),
       executor:fd.get('executor'), area:fd.get('area'),
       data_prevista:fd.get('data_prevista')||null, data_entregue:fd.get('data_entregue')||null,
+      usuario_cadastro:USER.id
     }]);
     if (error) throw error;
     document.getElementById('form-cad-atv').reset();
@@ -2003,29 +2005,54 @@ function mkDonut(id,labels,values,colors,isModal=false){
 }
 
 function mkMisto(id,labels,qtds,total,onClickFn){
-  const pcts=qtds.map(v=>((v/(total||1))*100).toFixed(1));
-  const maxP=Math.max(...pcts.map(Number))||1;
-  const ch=new Chart(document.getElementById(id),{type:'bar',
-    data:{labels:labels.map(l=>trunc(l,15)),
-      datasets:[
-        {type:'line',label:'%',data:pcts,borderColor:'#f59e0b',backgroundColor:'#f59e0b',borderWidth:2,pointRadius:3,yAxisID:'y1',datalabels:{display:false},order:1},
-        {type:'bar',label:'Qtd',data:qtds,backgroundColor:'#38769b',borderRadius:4,barPercentage:.6,yAxisID:'y',order:2,
-          datalabels:{align:'end',anchor:'end',color:'#1e293b',font:{size:10,weight:'bold'},offset:2,formatter:v=>v}}
-      ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:tipCfg},
-      scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}},y:{display:false,grace:'25%'},y1:{display:false,min:0,max:maxP*2.8}},
-      layout:{padding:{top:22}},onClick:onClickFn||undefined}});
-  chartsMap[id]={chart:ch,qtds,pcts}; return ch;
+  const pcts = qtds.map(v => parseFloat(((v/(total||1))*100).toFixed(1)));
+  const canvasEl = document.getElementById(id);
+  const wrapper  = canvasEl && canvasEl.parentElement;
+  /* altura dinâmica: 32px por barra, mínimo 100px */
+  if (wrapper) {
+    const h = Math.max(100, labels.length * 32);
+    wrapper.style.height    = h + 'px';
+    wrapper.style.overflowY = 'hidden';
+    wrapper.style.minHeight = 'unset';
+  }
+  const ch = new Chart(canvasEl, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Qtd', data: qtds,
+        backgroundColor: '#38769b', hoverBackgroundColor: '#2d6488',
+        borderRadius: 4, barThickness: 20,
+        datalabels: {
+          anchor:'end', align:'end',
+          color:'#1e293b', font:{size:10, weight:'700'},
+          offset:4, formatter: v => v
+        }
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:tipCfg },
+      scales: {
+        y: { grid:{display:false}, ticks:{color:'#64748b', font:{size:10}, autoSkip:false, maxRotation:0} },
+        x: { display:false, grace:'25%' }
+      },
+      layout: { padding:{right:46} },
+      onClick: onClickFn || undefined
+    }
+  });
+  chartsMap[id] = { chart:ch, qtds, pcts };
+  return ch;
 }
 
 function toggleModo(id,btn){
   const info=chartsMap[id]; if(!info) return;
   btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-  const isPct=btn.textContent.trim()==='%', ds=info.chart.data.datasets[1];
-  ds.data=isPct?info.pcts:info.qtds;
-  ds.datalabels.formatter=isPct?v=>v+'%':v=>v;
-  info.chart.options.scales.y.max=(Math.max(...ds.data.map(Number))||1)*1.4;
+  const isPct = btn.textContent.trim() === '%';
+  const ds = info.chart.data.datasets[0];   /* dataset único nas barras horizontais */
+  ds.data = isPct ? info.pcts : info.qtds;
+  ds.datalabels.formatter = isPct ? v => v + '%' : v => v;
   info.chart.update();
 }
 
@@ -2072,9 +2099,9 @@ function renderIndAtv(list){
   `<div class="proj-row"><div class="chart-card"><div class="chart-hdr">
     <div class="chart-title"><i class="bi bi-bar-chart-steps"></i>Projetos Relacionados</div>
     <div class="toggle-mode"><button class="active" onclick="toggleModo('chProj',this)">Qtd</button><button onclick="toggleModo('chProj',this)">%</button></div>
-  </div><div class="chart-body" style="height:150px;"><canvas id="chProj"></canvas></div></div></div>
+  </div><div class="chart-body" style="overflow:hidden;"><canvas id="chProj"></canvas></div></div></div>
 
-  <div class="dash-grid" style="grid-template-rows:260px 240px 280px;">
+  <div class="dash-grid" style="grid-template-rows:260px 320px 280px;">
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-person-circle"></i>Condutores</div></div><div class="chart-body"><canvas id="chCond"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-flag"></i>Prioridades</div></div><div class="chart-body"><canvas id="chPrio2"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-circle-half"></i>Status Geral</div></div><div class="chart-body"><canvas id="chStat"></canvas></div></div>
@@ -2288,31 +2315,22 @@ function renderTblDrill(list){
 }
 
 /* ─── POPULATE SELECTS ──────────────────── */
-/* ─── LISTAS FIXAS ─────────────────────────────────────────────────── */
-const AREAS_PROJ  = ['PQI','RH','Comercial','Logística','CX','E-commerce','Jurídico','TI'];
-const AREAS_ATV   = ['Diretoria','Jurídico','Marketing','Compliance','Comercial','Financeiro',
-                     'Facilities','Contabilidade','Fiscal','Qualidade','Compras','TI',
-                     'Vendas Internas','Monitoramento','Manutenção','RH','CX','PQI','Logística'];
-const CONDUTORES  = ['Denise','Guilherme','Karla','Wendley'];
-const STATUS_PROJ = ['Não Iniciado','Em Andamento','Pausado','Atrasado','Cancelado','Concluído'];
-
-function _opts(arr, placeholder) {
-  return `<option value="">${placeholder}</option>` +
-    arr.map(v => `<option value="${v}">${v}</option>`).join('');
-}
-
-function populateSelects() {
-  /* Área projetos */
-  ['cadProjArea','epArea'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_PROJ,'Selecione a Área...'); });
-  ['fvpArea','fipArea']  .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_PROJ,'Todas'); });
-  /* Área atividades */
-  ['cadAtvArea','eaArea'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_ATV,'Selecione a Área...'); });
-  ['fvaArea','fiaArea']  .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_ATV,'Todas'); });
-  /* Condutores */
-  ['cadAtvCondutor','eaCondutor'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(CONDUTORES,'Selecione...'); });
-  ['fvaCondutor','fiaCondutor'] .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(CONDUTORES,'Todos'); });
-  /* Status projetos (filtros) */
-  ['fvpStatus','fipStatus'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(STATUS_PROJ,'Todos'); });
+async function populateSelects() {
+  if (USER?._isFake) return; // fake login: sem Supabase
+  const [{ data: areas }, { data: condutores }] = await Promise.all([
+    db.from('bi_areas').select('*').order('nome'),
+    db.from('bi_condutores').select('*').order('nome')
+  ]);
+  const aProj = (areas||[]).filter(a=>a.tipo==='projeto');
+  const aAtv  = (areas||[]).filter(a=>a.tipo==='atividade');
+  const mkOpts = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
+  const mkCond = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
+  ['cadProjArea','epArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,null); });
+  ['fvpArea','fipArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,'Todas'); });
+  ['cadAtvArea','eaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,null); });
+  ['fvaArea','fiaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,'Todas'); });
+  ['cadAtvCondutor','eaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],null); });
+  ['fvaCondutor','fiaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],'Todos'); });
 }
 
 /* ─── CONFIG TABS ───────────────────────── */
@@ -2346,7 +2364,7 @@ async function addArea(tipo) {
   const { error } = await db.from('bi_areas').insert([{ nome, tipo }]);
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById(inputId).value = '';
-  await loadConfigAreas(); populateSelects();
+  await Promise.all([loadConfigAreas(), populateSelects()]);
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'Área adicionada!',showConfirmButton:false,timer:2000});
 }
 
@@ -2354,7 +2372,7 @@ async function delArea(id, tipo) {
   const r = await Swal.fire({title:'Remover área?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_areas').delete().eq('id',id);
-  await loadConfigAreas(); populateSelects();
+  await Promise.all([loadConfigAreas(), populateSelects()]);
 }
 
 /* ─── CONDUTORES ────────────────────────── */
@@ -2371,7 +2389,7 @@ async function addCondutor() {
   const { error } = await db.from('bi_condutores').insert([{ nome }]);
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById('cfgNewCondutor').value = '';
-  await loadConfigCondutores(); populateSelects();
+  await Promise.all([loadConfigCondutores(), populateSelects()]);
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'Condutor adicionado!',showConfirmButton:false,timer:2000});
 }
 
@@ -2379,7 +2397,7 @@ async function delCondutor(id) {
   const r = await Swal.fire({title:'Remover condutor?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_condutores').delete().eq('id',id);
-  await loadConfigCondutores(); populateSelects();
+  await Promise.all([loadConfigCondutores(), populateSelects()]);
 }
 
 /* ─── USUÁRIOS ──────────────────────────── */
