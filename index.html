@@ -19,13 +19,17 @@
 ║    data_acionamento date, data_inicio date,                          ║
 ║    data_implementacao date, data_alteracao_status date,              ║
 ║    prioridade text, status text, situacao text,                      ║
-║    usuario_cadastro uuid,                                             ║
+║    usuario_cadastro uuid REFERENCES auth.users,                      ║
+║    created_at timestamptz DEFAULT now()                              ║
+║  );                                                                  ║
+║                                                                      ║
+║  CREATE TABLE bi_projetos_atividades (                               ║
 ║    id bigserial PRIMARY KEY,                                         ║
 ║    id_projeto bigint REFERENCES bi_projetosac(id),                   ║
 ║    condutor text, descricao_atividade text, prioridade text,         ║
 ║    executor text, area text, data_prevista date,                     ║
 ║    data_entregue date,                                               ║
-║    usuario_cadastro uuid,                                            ║
+║    usuario_cadastro uuid REFERENCES auth.users,                      ║
 ║    data_cadastro timestamptz DEFAULT now()                           ║
 ║  );                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -1373,7 +1377,7 @@ async function initApp(user) {
   document.getElementById('topMeta').textContent  = new Date().toLocaleString('pt-BR');
   if (ADMIN) document.body.classList.add('is-admin');
   await loadProjetos();
-  await populateSelects();
+  populateSelects();
   loadExecSugest();
   switchView('vis-proj');
 }
@@ -1583,7 +1587,7 @@ async function submitCadProj(e) {
       area:fd.get('area'), melhoria:fd.get('melhoria'), prioridade:fd.get('prioridade'),
       data_acionamento:fd.get('data_acionamento')||null, data_inicio:fd.get('data_inicio')||null,
       data_implementacao:fd.get('data_implementacao')||null,
-      status:fd.get('status'), situacao:fd.get('situacao')||getSit(fd.get('status'))
+      status:fd.get('status'), situacao:fd.get('situacao')||getSit(fd.get('status')),
     }]);
     if (error) throw error;
     document.getElementById('form-cad-proj').reset();
@@ -1821,7 +1825,7 @@ async function submitCadAtv(e) {
       id_projeto:fd.get('id_projeto')||null, condutor:fd.get('condutor'),
       descricao_atividade:fd.get('descricao_atividade'), prioridade:fd.get('prioridade'),
       executor:fd.get('executor'), area:fd.get('area'),
-      data_prevista:fd.get('data_prevista')||null, data_entregue:fd.get('data_entregue')||null
+      data_prevista:fd.get('data_prevista')||null, data_entregue:fd.get('data_entregue')||null,
     }]);
     if (error) throw error;
     document.getElementById('form-cad-atv').reset();
@@ -2284,22 +2288,31 @@ function renderTblDrill(list){
 }
 
 /* ─── POPULATE SELECTS ──────────────────── */
-async function populateSelects() {
-  if (USER?._isFake) return; // fake login: sem Supabase
-  const [{ data: areas }, { data: condutores }] = await Promise.all([
-    db.from('bi_areas').select('*').order('nome'),
-    db.from('bi_condutores').select('*').order('nome')
-  ]);
-  const aProj = (areas||[]).filter(a=>a.tipo==='projeto');
-  const aAtv  = (areas||[]).filter(a=>a.tipo==='atividade');
-  const mkOpts = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
-  const mkCond = (arr, all) => (all?`<option value="">${all}</option>`:'<option value="">Selecione...</option>') + arr.map(x=>`<option>${esc(x.nome)}</option>`).join('');
-  ['cadProjArea','epArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,null); });
-  ['fvpArea','fipArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aProj,'Todas'); });
-  ['cadAtvArea','eaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,null); });
-  ['fvaArea','fiaArea'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkOpts(aAtv,'Todas'); });
-  ['cadAtvCondutor','eaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],null); });
-  ['fvaCondutor','fiaCondutor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=mkCond(condutores||[],'Todos'); });
+/* ─── LISTAS FIXAS ─────────────────────────────────────────────────── */
+const AREAS_PROJ  = ['PQI','RH','Comercial','Logística','CX','E-commerce','Jurídico','TI'];
+const AREAS_ATV   = ['Diretoria','Jurídico','Marketing','Compliance','Comercial','Financeiro',
+                     'Facilities','Contabilidade','Fiscal','Qualidade','Compras','TI',
+                     'Vendas Internas','Monitoramento','Manutenção','RH','CX','PQI','Logística'];
+const CONDUTORES  = ['Denise','Guilherme','Karla','Wendley'];
+const STATUS_PROJ = ['Não Iniciado','Em Andamento','Pausado','Atrasado','Cancelado','Concluído'];
+
+function _opts(arr, placeholder) {
+  return `<option value="">${placeholder}</option>` +
+    arr.map(v => `<option value="${v}">${v}</option>`).join('');
+}
+
+function populateSelects() {
+  /* Área projetos */
+  ['cadProjArea','epArea'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_PROJ,'Selecione a Área...'); });
+  ['fvpArea','fipArea']  .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_PROJ,'Todas'); });
+  /* Área atividades */
+  ['cadAtvArea','eaArea'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_ATV,'Selecione a Área...'); });
+  ['fvaArea','fiaArea']  .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(AREAS_ATV,'Todas'); });
+  /* Condutores */
+  ['cadAtvCondutor','eaCondutor'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(CONDUTORES,'Selecione...'); });
+  ['fvaCondutor','fiaCondutor'] .forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(CONDUTORES,'Todos'); });
+  /* Status projetos (filtros) */
+  ['fvpStatus','fipStatus'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=_opts(STATUS_PROJ,'Todos'); });
 }
 
 /* ─── CONFIG TABS ───────────────────────── */
@@ -2333,7 +2346,7 @@ async function addArea(tipo) {
   const { error } = await db.from('bi_areas').insert([{ nome, tipo }]);
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById(inputId).value = '';
-  await Promise.all([loadConfigAreas(), populateSelects()]);
+  await loadConfigAreas(); populateSelects();
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'Área adicionada!',showConfirmButton:false,timer:2000});
 }
 
@@ -2341,7 +2354,7 @@ async function delArea(id, tipo) {
   const r = await Swal.fire({title:'Remover área?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_areas').delete().eq('id',id);
-  await Promise.all([loadConfigAreas(), populateSelects()]);
+  await loadConfigAreas(); populateSelects();
 }
 
 /* ─── CONDUTORES ────────────────────────── */
@@ -2358,7 +2371,7 @@ async function addCondutor() {
   const { error } = await db.from('bi_condutores').insert([{ nome }]);
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById('cfgNewCondutor').value = '';
-  await Promise.all([loadConfigCondutores(), populateSelects()]);
+  await loadConfigCondutores(); populateSelects();
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'Condutor adicionado!',showConfirmButton:false,timer:2000});
 }
 
@@ -2366,7 +2379,7 @@ async function delCondutor(id) {
   const r = await Swal.fire({title:'Remover condutor?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_condutores').delete().eq('id',id);
-  await Promise.all([loadConfigCondutores(), populateSelects()]);
+  await loadConfigCondutores(); populateSelects();
 }
 
 /* ─── USUÁRIOS ──────────────────────────── */
