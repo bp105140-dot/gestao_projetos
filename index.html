@@ -1979,7 +1979,8 @@ function renderAtvTable(list) {
       <button class="btn-ac del" onclick="delAtv(${a.id})"><i class="bi bi-trash"></i></button>
     </td>`:'';
     return `<tr class="row-click" onclick='openDetAtv(${JSON.stringify(dataJ)})'>
-      <td title="${esc(a.nome_projeto)}">${esc((a.nome_projeto||'').substring(0,40))}${(a.nome_projeto||'').length>40?'…':''}</td>
+      <td title="${esc(a.nome_projeto)}">${esc((a.nome_projeto||'').substring(0,30))}${(a.nome_projeto||'').length>30?'…':''}</td>
+      <td title="${esc(a.descricao_atividade)}">${esc((a.descricao_atividade||'').substring(0,45))}${(a.descricao_atividade||'').length>45?'…':''}</td>
       <td>${esc(a.condutor||'')}</td><td>${esc(a.executor||'')}</td><td>${esc(a.area||'')}</td>
       <td style="text-align:center;overflow:visible"><span class="badge ${pMap[a.prioridade]||''}">${esc(a.prioridade||'')}</span></td>
       <td style="text-align:center">${fmtDate(a.data_prevista)}</td>
@@ -1991,9 +1992,10 @@ function renderAtvTable(list) {
   }).join('');
   area.innerHTML=`<div class="tbl-wrap"><table class="data-table">
     <thead><tr>
-      <th style="width:21%">Projeto</th><th style="width:8%">Condutor</th><th style="width:12%">Executor</th>
-      <th style="width:8%">Área</th><th style="width:7%">Prior.</th><th style="width:7%">Prev.</th>
-      <th style="width:7%">Entregue</th><th style="width:9%">Status</th><th style="width:9%">Prazo</th>${actH}
+      <th style="width:14%">Projeto</th><th style="width:20%">Descrição</th>
+      <th style="width:8%">Condutor</th><th style="width:10%">Executor</th>
+      <th style="width:7%">Área</th><th style="width:6%">Prior.</th><th style="width:7%">Prev.</th>
+      <th style="width:7%">Entregue</th><th style="width:8%">Status</th><th style="width:7%">Prazo</th>${actH}
     </tr></thead><tbody>${rows}</tbody>
   </table></div>`;
 }
