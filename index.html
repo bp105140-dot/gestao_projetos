@@ -1,14 +1,3 @@
-<!--
-  ╔══════════════════════════════════════════════════════════╗
-  ║  SUPABASE — execute este SQL se ainda não rodou:        ║
-  ║                                                          ║
-  ║  ALTER TABLE bi_projetosac                               ║
-  ║    ADD COLUMN IF NOT EXISTS nome_projeto text;           ║
-  ║                                                          ║
-  ║  ALTER TABLE bi_projetos_atividades                      ║
-  ║    ADD COLUMN IF NOT EXISTS nome_atividade text;         ║
-  ╚══════════════════════════════════════════════════════════╝
--->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -779,7 +768,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
 <!-- ═══════════════════════════════════════════════════
      LOGIN SCREEN
 ═══════════════════════════════════════════════════ -->
-<div id="loginScreen">
+<div id="loginScreen" style="display:none;">
   <div class="login-wrap">
     <div class="login-card">
       <div class="login-brand">
@@ -1442,7 +1431,9 @@ db.auth.onAuthStateChange((ev, sess) => {
   } catch(_) {}
   /* 2. Sessão real Supabase */
   const { data:{ session } } = await db.auth.getSession();
-  if (session?.user) await initApp(session.user);
+  if (session?.user) { await initApp(session.user); return; }
+  /* Sem sessão — exibe tela de login */
+  document.getElementById('loginScreen').style.display = 'flex';
 })();
 
 document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
@@ -1530,13 +1521,13 @@ function computeAtvStatus(a) {
 
 /* ─── SUPABASE DATA ─────────────────────── */
 async function loadProjetos() {
-  const { data } = await db.from('bi_projetosac').select('id,nome_projeto,melhoria').order('id',{ascending:false});
+  const { data } = await db.from('bi_projetosac').select('id,melhoria').order('id',{ascending:false});
   PROJETOS = data || [];
   const opts = '<option value="">Selecione o Projeto...</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">${esc(p.nome_projeto||(p.melhoria||'').substring(0,50)||('Projeto #'+p.id))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,60))}</option>`).join('');
   ['cadAtvProjeto','eaProjeto'].forEach(id => document.getElementById(id).innerHTML = opts);
   const visOpts = '<option value="">Todos</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">${esc(p.nome_projeto||(p.melhoria||'').substring(0,40)||('Projeto #'+p.id))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,40))}</option>`).join('');
   document.getElementById('fvaProjeto').innerHTML = visOpts;
 }
 
@@ -1607,8 +1598,9 @@ function renderProjTable(list) {
       <button class="btn-ac del"  onclick="delProj(${p.id})"><i class="bi bi-trash"></i></button>
     </td>` : '';
     return `<tr class="row-click" onclick='openDescModal("${esc(p.melhoria||'')}","#${p.id}")'>
+      <td style="font-weight:600;" title="${esc(p.nome_projeto||'')}">${esc((p.nome_projeto||'—').substring(0,30))}${(p.nome_projeto||'').length>30?'…':''}</td>
       <td>${esc(p.area||'')}</td>
-      <td title="${esc(p.melhoria||'')}">${esc((p.melhoria||'').substring(0,70))}${(p.melhoria||'').length>70?'…':''}</td>
+      <td title="${esc(p.melhoria||'')}">${esc((p.melhoria||'').substring(0,55))}${(p.melhoria||'').length>55?'…':''}</td>
       <td style="text-align:center">${fmtDate(p.data_acionamento)}</td>
       <td style="text-align:center">${fmtDate(p.data_inicio)}</td>
       <td style="text-align:center;font-weight:700">${fmtDate(p.data_implementacao)}</td>
@@ -1621,11 +1613,11 @@ function renderProjTable(list) {
   }).join('');
   area.innerHTML = `<div class="tbl-wrap"><table class="data-table">
     <thead><tr>
-      <th style="width:7%">Área</th><th style="width:22%">Melhoria / Projeto</th>
-      <th style="width:8%">Acionamento</th><th style="width:7%">Início</th>
-      <th style="width:9%">Implementação</th><th style="width:7%">Alteração</th>
-      <th style="width:8%">Prioridade</th><th style="width:9%">Status</th>
-      <th style="width:9%">Situação</th>${actH}
+      <th style="width:12%">Nome do Projeto</th><th style="width:6%">Área</th><th style="width:18%">Descrição</th>
+      <th style="width:7%">Acionamento</th><th style="width:6%">Início</th>
+      <th style="width:8%">Implementação</th><th style="width:6%">Alteração</th>
+      <th style="width:7%">Prioridade</th><th style="width:8%">Status</th>
+      <th style="width:8%">Situação</th>${actH}
     </tr></thead><tbody>${rows}</tbody>
   </table></div>`;
 }
