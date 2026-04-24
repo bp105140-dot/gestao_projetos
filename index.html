@@ -1126,7 +1126,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="cfg-panel" id="cfgp-usuarios">
           <div class="cfg-card">
             <h4><i class="bi bi-person-plus"></i>Adicionar Usuário</h4>
-            <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p>
+            <!-- <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p> -->
             <div class="cfg-add-row">
               <input type="email" id="cfgNewUsrEmail" placeholder="email@empresa.com">
               <input type="password" id="cfgNewUsrPass" placeholder="Senha..." style="max-width:160px;">
@@ -1359,13 +1359,13 @@ async function doLogin() {
   errEl.classList.remove('show');
   btn.innerHTML = '<span class="spin"></span> Entrando...'; btn.disabled = true;
 
-  /* Fake login */
-  const fake = FAKE_USERS.find(u => u.email === email && u.password === pass);
-  if (fake) {
-    const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:fake.email, _isFake:true, _isAdmin:fake.isAdmin };
-    localStorage.setItem(_FAKE_KEY, JSON.stringify({ email:fake.email, isAdmin:fake.isAdmin }));
-    await initApp(fakeUser); return;
-  }
+  // /* Fake login */
+  // const fake = FAKE_USERS.find(u => u.email === email && u.password === pass);
+  // if (fake) {
+  //   const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:fake.email, _isFake:true, _isAdmin:fake.isAdmin };
+  //   localStorage.setItem(_FAKE_KEY, JSON.stringify({ email:fake.email, isAdmin:fake.isAdmin }));
+  //   await initApp(fakeUser); return;
+  // }
 
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
