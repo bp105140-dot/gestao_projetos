@@ -1566,16 +1566,45 @@ function computeAtvStatus(a) {
 
 /* ─── SUPABASE DATA ─────────────────────── */
 async function loadProjetos() {
-  const { data } = await db.from('bi_projetosac').select('id,nome_projeto').order('id',{ascending:false});
-  PROJETOS = data || [];
-  const opts = '<option value="">Selecione o Projeto...</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.nome_projeto||'').substring(0,60))}</option>`).join('');
-  ['cadAtvProjeto','eaProjeto'].forEach(id => document.getElementById(id).innerHTML = opts);
-  const visOpts = '<option value="">Todos</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.nome_projeto||'').substring(0,40))}</option>`).join('');
-  document.getElementById('fvaProjeto').innerHTML = visOpts;
-}
+  // 1. Busca os dados
+  const { data, error } = await db.from('bi_projetosac')
+    .select('id, nome_projeto')
+    .order('id', { ascending: false });
 
+  if (error) {
+    console.error("Erro ao buscar projetos:", error);
+    return;
+  }
+
+  // LOG DE TESTE: Abre a consola do navegador (F12) e vê se o nome aparece aqui
+  console.log("Dados recebidos:", data);
+
+  PROJETOS = data || [];
+
+  // 2. Criação das opções para o formulário
+  const opts = '<option value="">Selecione o Projeto...</option>' +
+    PROJETOS.map(p => {
+      // Garantimos que o nome existe, senão usamos uma string de aviso
+      const nomeExibicao = p.nome_projeto ? p.nome_projeto : "Sem nome definido";
+      return `<option value="${p.id}">#${p.id} – ${esc(nomeExibicao.substring(0, 60))}</option>`;
+    }).join('');
+
+  // Atualiza os selects de cadastro
+  ['cadAtvProjeto', 'eaProjeto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+
+  // 3. Criação das opções para o filtro/visualização
+  const visOpts = '<option value="">Todos</option>' +
+    PROJETOS.map(p => {
+      const nomeExibicao = p.nome_projeto ? p.nome_projeto : "Sem nome";
+      return `<option value="${p.id}">#${p.id} – ${esc(nomeExibicao.substring(0, 40))}</option>`;
+    }).join('');
+
+  const fvaEl = document.getElementById('fvaProjeto');
+  if (fvaEl) fvaEl.innerHTML = visOpts;
+}
 async function loadExecSugest() {
   const { data } = await db.from('bi_projetos_atividades').select('executor');
   const dist = [...new Set((data||[]).map(r=>r.executor).filter(Boolean))].sort();
