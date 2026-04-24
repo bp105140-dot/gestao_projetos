@@ -15,20 +15,13 @@
 ║  );                                                                  ║
 ║                                                                      ║
 ║  CREATE TABLE bi_projetosac (                                        ║
-║    id bigserial PRIMARY KEY, area text,                              ║
-║    nome_projeto text,                                                ║
-║    melhoria text,                                                    ║
+║    id bigserial PRIMARY KEY, area text, melhoria text,               ║
 ║    data_acionamento date, data_inicio date,                          ║
-║    data_prevista_entrega date,                                       ║
 ║    data_implementacao date, data_alteracao_status date,              ║
 ║    prioridade text, status text, situacao text,                      ║
 ║    usuario_cadastro uuid REFERENCES auth.users,                      ║
 ║    created_at timestamptz DEFAULT now()                              ║
 ║  );                                                                  ║
-║                                                                      ║
-║  -- Migração (se a tabela já existe):                                ║
-║  ALTER TABLE bi_projetosac ADD COLUMN IF NOT EXISTS nome_projeto text; ║
-║  ALTER TABLE bi_projetosac ADD COLUMN IF NOT EXISTS data_prevista_entrega date;                                                                  ║
 ║                                                                      ║
 ║  CREATE TABLE bi_projetos_atividades (                               ║
 ║    id bigserial PRIMARY KEY,                                         ║
@@ -442,13 +435,8 @@ body.is-admin .nav-pills .nav-link.admin-only { display:flex; }
 .btn-ac.edit:hover { background:rgba(56,118,155,.22); }
 .btn-ac.del  { background:rgba(239,68,68,.1); color:var(--danger); }
 .btn-ac.del:hover  { background:rgba(239,68,68,.2); }
-.btn-ac.atv  { background:rgba(99,102,241,.1); color:var(--info); }
-.btn-ac.atv:hover  { background:rgba(99,102,241,.2); }
-/* prazo badges */
-.b-antes-prazo { background:rgba(6,182,212,.1);  color:#0e7490; }
-.b-no-prazo    { background:rgba(16,185,129,.12); color:#065f46; }
-.b-fora-prazo  { background:rgba(239,68,68,.12);  color:#b91c1c; }
-.b-sem-impl    { background:rgba(100,116,139,.1); color:#475569; }
+.btn-ac.view { background:rgba(16,185,129,.1); color:#059669; }
+.btn-ac.view:hover { background:rgba(16,185,129,.2); }
 
 /* ═══════════════════════════════════════════════════
    KPI CARDS
@@ -884,20 +872,14 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="form-card-title"><i class="bi bi-plus-circle-fill"></i>Novo Projeto</div>
           <form id="form-cad-proj" onsubmit="submitCadProj(event)">
             <div class="f-row">
-              <div class="f-grp full">
-                <label>1. Nome do Projeto</label>
-                <input type="text" name="nome_projeto" placeholder="Ex: Portal do Cliente v2, ERP Módulo Fiscal..." required>
-              </div>
-            </div>
-            <div class="f-row">
               <div class="f-grp">
-                <label>2. Área</label>
+                <label>1. Área</label>
                 <select name="area" id="cadProjArea" required>
                   <option value="">Carregando...</option>
                 </select>
               </div>
               <div class="f-grp">
-                <label>3. Prioridade</label>
+                <label>2. Prioridade</label>
                 <select name="prioridade" required>
                   <option value="">Selecione...</option>
                   <option>Baixo</option><option>Médio</option><option>Alto</option>
@@ -906,15 +888,14 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
             </div>
             <div class="f-row">
               <div class="f-grp full">
-                <label>4. Descrição / Melhoria</label>
+                <label>3. Descrição / Melhoria</label>
                 <textarea name="melhoria" placeholder="Descreva o projeto ou melhoria..." required></textarea>
               </div>
             </div>
             <div class="f-row">
-              <div class="f-grp"><label>5. Data Acionamento</label><input type="date" name="data_acionamento"></div>
-              <div class="f-grp"><label>6. Data Início</label><input type="date" name="data_inicio"></div>
-              <div class="f-grp"><label>7. Prev. Entrega <span style="color:var(--danger)">*</span></label><input type="date" name="data_prevista_entrega" required></div>
-              <div class="f-grp"><label>8. Data Implementação</label><input type="date" name="data_implementacao"></div>
+              <div class="f-grp"><label>4. Data Acionamento</label><input type="date" name="data_acionamento"></div>
+              <div class="f-grp"><label>5. Data Início</label><input type="date" name="data_inicio"></div>
+              <div class="f-grp"><label>6. Data Implementação</label><input type="date" name="data_implementacao"></div>
             </div>
             <div class="f-row">
               <div class="f-grp">
@@ -1174,10 +1155,6 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
       <form id="formEditProj" onsubmit="submitEditProj(event)">
         <input type="hidden" id="epId"> <input type="hidden" id="epStatusOld">
         <div class="f-row">
-          <div class="f-grp full"><label>Nome do Projeto</label>
-            <input type="text" id="epNome" placeholder="Nome do projeto..." required></div>
-        </div>
-        <div class="f-row">
           <div class="f-grp"><label>Área</label>
             <select id="epArea" required>
               <option value="">Selecione...</option>
@@ -1193,7 +1170,6 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="f-row">
           <div class="f-grp"><label>Data Acionamento</label><input type="date" id="epDtAc"></div>
           <div class="f-grp"><label>Data Início</label><input type="date" id="epDtIn"></div>
-          <div class="f-grp"><label>Prev. Entrega</label><input type="date" id="epDtPrev"></div>
           <div class="f-grp"><label>Data Implementação</label><input type="date" id="epDtImpl"></div>
         </div>
         <div class="f-row">
@@ -1285,27 +1261,6 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
   </div>
 </div>
 
-<!-- ═══ MODAL ATIVIDADES DO PROJETO ═══ -->
-<div class="modal-overlay" id="modalProjAtv" onclick="closeMIfOut(event,'modalProjAtv')">
-  <div class="modal-box" style="max-width:780px;">
-    <div class="modal-hdr">
-      <h3><i class="bi bi-list-check" style="color:var(--accent);margin-right:.35rem;"></i>Atividades do Projeto <span id="projAtvTitle"></span></h3>
-      <button class="btn-close" onclick="closeM('modalProjAtv')">×</button>
-    </div>
-    <div class="modal-body">
-      <!-- Resumo do projeto -->
-      <div id="projAtvResumo" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.55rem;margin-bottom:1rem;"></div>
-      <!-- Badge status prazo -->
-      <div id="projAtvPrazoStatus" style="margin-bottom:1rem;"></div>
-      <!-- Lista atividades -->
-      <div id="projAtvLista"></div>
-    </div>
-    <div class="modal-ftr">
-      <button class="btn-modal-sec" onclick="closeM('modalProjAtv')">Fechar</button>
-    </div>
-  </div>
-</div>
-
 <!-- ═══ MODAL DRILL-DOWN ═══ -->
 <div class="dd-overlay" id="ddOverlay" onclick="closeDDIfOut(event)">
   <div class="dd-content">
@@ -1339,6 +1294,51 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
 <!-- ═══════════════════════════════════════════════════
      SCRIPT
 ═══════════════════════════════════════════════════ -->
+
+<!-- ═══ MODAL ATIVIDADES DO PROJETO ═══ -->
+<div class="modal-overlay" id="modalAtvProj" onclick="closeMIfOut(event,'modalAtvProj')">
+  <div class="modal-box" style="max-width:1000px;max-height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-hdr" style="flex-shrink:0;">
+      <h3>
+        <i class="bi bi-list-check" style="color:var(--accent);margin-right:.4rem;"></i>
+        Atividades — <span id="atvProjNome" style="color:var(--accent);"></span>
+      </h3>
+      <button class="btn-close" onclick="closeM('modalAtvProj')">×</button>
+    </div>
+
+    <!-- KPIs strip -->
+    <div id="atvProjKpis" style="display:flex;gap:.6rem;padding:.85rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;"></div>
+
+    <!-- Tabela -->
+    <div class="modal-body" style="padding:0;flex:1;overflow-y:auto;">
+      <table class="data-table" style="table-layout:auto;min-width:720px;">
+        <thead>
+          <tr>
+            <th>Nome da Atividade</th>
+            <th>Descrição</th>
+            <th>Condutor</th>
+            <th>Executor</th>
+            <th>Área</th>
+            <th>Prioridade</th>
+            <th>Prevista</th>
+            <th>Entregue</th>
+            <th>Status</th>
+            <th>Prazo</th>
+          </tr>
+        </thead>
+        <tbody id="atvProjTbody">
+          <tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted);">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-ftr" style="flex-shrink:0;">
+      <div id="atvProjCount" style="margin-right:auto;font-size:.75rem;color:var(--muted);"></div>
+      <button class="btn-modal-sec" onclick="closeM('modalAtvProj')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ─── CONFIG ─────────────────────────────── */
 const SUPABASE_URL      = 'https://jbrcfvduswjmccqmtfxe.supabase.co';
@@ -1363,10 +1363,6 @@ window._atvList = [];
 
 /* ─── AUTH ──────────────────────────────── */
 
-/* Fake login para desenvolvimento — remove em produção.
-   Credenciais: admin@admin / 123456                     */
-const FAKE_USERS  = [{ email:'admin@admin', password:'123456', isAdmin:true }];
-const _FAKE_KEY   = 'bi_fake_sess';
 
 /* ─── INATIVIDADE: logout após 20 min sem interação ─── */
 const INACT_MS = 20 * 60 * 1000;   /* 20 minutos */
@@ -1406,14 +1402,6 @@ async function doLogin() {
   errEl.classList.remove('show');
   btn.innerHTML = '<span class="spin"></span> Entrando...'; btn.disabled = true;
 
-  /* Fake login */
-  const fake = FAKE_USERS.find(u => u.email === email && u.password === pass);
-  if (fake) {
-    const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:fake.email, _isFake:true, _isAdmin:fake.isAdmin };
-    localStorage.setItem(_FAKE_KEY, JSON.stringify({ email:fake.email, isAdmin:fake.isAdmin }));
-    await initApp(fakeUser); return;
-  }
-
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
@@ -1427,13 +1415,10 @@ async function doLogin() {
 
 async function doLogout() {
   _stopInact();
-  localStorage.removeItem(_FAKE_KEY);
-  if (USER?._isFake) { USER = null; location.reload(); return; }
   await db.auth.signOut(); location.reload();
 }
 
 async function checkAdmin(uid) {
-  if (USER?._isFake) return USER._isAdmin === true;
   try {
     const { data } = await db.from('profiles').select('is_admin').eq('id', uid).single();
     return data?.is_admin === true;
@@ -1465,30 +1450,18 @@ db.auth.onAuthStateChange((ev, sess) => {
   }
 });
 
-/* Ao carregar a página: tenta restaurar sessão fake ou Supabase */
+/* Ao carregar a página: restaura sessão Supabase se existir */
 (async () => {
-  /* 1. Fake session gravada no localStorage */
-  try {
-    const saved = localStorage.getItem(_FAKE_KEY);
-    if (saved) {
-      const p = JSON.parse(saved);
-      const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:p.email, _isFake:true, _isAdmin:p.isAdmin };
-      await initApp(fakeUser); return;
-    }
-  } catch(_) {}
-  /* 2. Sessão real Supabase */
   const { data:{ session } } = await db.auth.getSession();
-  if (session?.user) await initApp(session.user);
+  if (session?.user) { await initApp(session.user); return; }
+  /* Sem sessão ativa — exibe tela de login */
+  document.getElementById('loginScreen').style.display = 'flex';
 })();
 
 document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('lEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('lPass').focus(); });
 
-/* Preenche login fake automaticamente — remove em produção */
-(function(){
-  document.getElementById('lEmail').value = 'admin@admin';
-  document.getElementById('lPass').value  = '123456';
-})();
+
 
 /* ─── SIDEBAR TOGGLE ────────────────────── */
 document.getElementById('sbToggle').addEventListener('click', () => {
@@ -1566,13 +1539,13 @@ function computeAtvStatus(a) {
 
 /* ─── SUPABASE DATA ─────────────────────── */
 async function loadProjetos() {
-  const { data } = await db.from('bi_projetosac').select('id,melhoria').order('id',{ascending:false});
+  const { data } = await db.from('bi_projetosac').select('id,nome_projeto,melhoria').order('id',{ascending:false});
   PROJETOS = data || [];
   const opts = '<option value="">Selecione o Projeto...</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,60))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">${esc(p.nome_projeto||(p.melhoria||'').substring(0,50)||('Projeto #'+p.id))}</option>`).join('');
   ['cadAtvProjeto','eaProjeto'].forEach(id => document.getElementById(id).innerHTML = opts);
   const visOpts = '<option value="">Todos</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,40))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">${esc(p.nome_projeto||(p.melhoria||'').substring(0,40)||('Projeto #'+p.id))}</option>`).join('');
   document.getElementById('fvaProjeto').innerHTML = visOpts;
 }
 
@@ -1596,7 +1569,7 @@ async function fetchProj(f={}) {
 }
 
 async function fetchAtv(f={}) {
-  let q = db.from('bi_projetos_atividades').select('*,bi_projetosac(melhoria)').order('data_cadastro',{ascending:false});
+  let q = db.from('bi_projetos_atividades').select('*,bi_projetosac(id,nome_projeto,melhoria)').order('data_cadastro',{ascending:false});
   if (f.condutor)   q = q.eq('condutor',f.condutor);
   if (f.area)       q = q.eq('area',f.area);
   if (f.prioridade) q = q.eq('prioridade',f.prioridade);
@@ -1606,7 +1579,7 @@ async function fetchAtv(f={}) {
   else if (f.data_inicio) q = q.gte('data_prevista',f.data_inicio);
   else if (f.data_fim)    q = q.lte('data_prevista',f.data_fim);
   const { data, error } = await q; if (error) throw error;
-  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.melhoria||'Sem Projeto', ...computeAtvStatus(a)}));
+  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.nome_projeto||a.bi_projetosac?.melhoria||'Sem Projeto', ...computeAtvStatus(a)}));
 }
 
 /* ─── PROJETOS CRUD ─────────────────────── */
@@ -1630,41 +1603,32 @@ async function loadProj() {
 
 function badgeP(cls, txt) { return `<span class="badge b-${cls}">${esc(txt)}</span>`; }
 
-function calcPrazoStatus(p) {
-  if (!p.data_implementacao) return { cls:'b-sem-impl', txt:'Sem impl.' };
-  if (!p.data_prevista_entrega) return { cls:'b-sem-impl', txt:'Sem previsão' };
-  const prev = new Date(p.data_prevista_entrega), impl = new Date(p.data_implementacao);
-  const diff = Math.round((impl - prev) / 86400000);
-  if (diff < 0)  return { cls:'b-antes-prazo', txt:`${Math.abs(diff)}d antes` };
-  if (diff === 0) return { cls:'b-no-prazo', txt:'No prazo' };
-  return { cls:'b-fora-prazo', txt:`+${diff}d atraso` };
-}
-
 function renderProjTable(list) {
   const area = document.getElementById('tbl-proj-area');
   if (!list.length) {
     area.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i> Nenhum projeto encontrado.</div>'; return;
   }
-  const actH = ADMIN ? '<th style="width:9%">Ações</th>' : '<th style="width:6%">Ações</th>';
+  const actH = '<th style="width:9%">Ações</th>';
   const rows = list.map(p => {
     const sc = slugify(p.status||''), sp = slugify(p.prioridade||''), ss = slugify(p.situacao||'');
-    const prazo = calcPrazoStatus(p);
-    const actEdit = ADMIN ? `
-      <button class="btn-ac edit" onclick="openEditProj(${p.id})"><i class="bi bi-pencil"></i></button>
-      <button class="btn-ac del"  onclick="delProj(${p.id})"><i class="bi bi-trash"></i></button>` : '';
-    const act = `<td style="text-align:center;overflow:visible;" onclick="event.stopPropagation()">
-      <button class="btn-ac atv" onclick="openProjAtv(${p.id})" title="Ver atividades"><i class="bi bi-list-check"></i></button>
-      ${actEdit}
-    </td>`;
+    const nomeProjEsc = (p.nome_projeto||p.melhoria||'Projeto #'+p.id).replace(/'/g,"\\'");
+    const act = ADMIN
+      ? `<td style="text-align:center;overflow:visible;" onclick="event.stopPropagation()">
+          <button class="btn-ac view" onclick="openAtvProjModal(${p.id},'${nomeProjEsc}')" title="Ver atividades"><i class="bi bi-list-check"></i></button>
+          <button class="btn-ac edit" onclick="openEditProj(${p.id})" title="Editar"><i class="bi bi-pencil"></i></button>
+          <button class="btn-ac del"  onclick="delProj(${p.id})" title="Excluir"><i class="bi bi-trash"></i></button>
+        </td>`
+      : `<td style="text-align:center;overflow:visible;" onclick="event.stopPropagation()">
+          <button class="btn-ac view" onclick="openAtvProjModal(${p.id},'${nomeProjEsc}')" title="Ver atividades"><i class="bi bi-list-check"></i></button>
+        </td>`;
     return `<tr class="row-click" onclick='openDescModal("${esc(p.melhoria||'')}","#${p.id}")'>
-      <td style="font-weight:600">${esc(p.nome_projeto||'—')}</td>
+      <td style="font-weight:600;" title="${esc(p.nome_projeto||'')}">${esc((p.nome_projeto||'—').substring(0,30))}${(p.nome_projeto||'').length>30?'…':''}</td>
       <td>${esc(p.area||'')}</td>
       <td title="${esc(p.melhoria||'')}">${esc((p.melhoria||'').substring(0,55))}${(p.melhoria||'').length>55?'…':''}</td>
       <td style="text-align:center">${fmtDate(p.data_acionamento)}</td>
       <td style="text-align:center">${fmtDate(p.data_inicio)}</td>
-      <td style="text-align:center">${fmtDate(p.data_prevista_entrega)||'—'}</td>
       <td style="text-align:center;font-weight:700">${fmtDate(p.data_implementacao)}</td>
-      <td style="text-align:center;overflow:visible">${badgeP(prazo.cls, prazo.txt)}</td>
+      <td style="text-align:center">${fmtDate(p.data_alteracao_status)}</td>
       <td style="text-align:center;overflow:visible">${badgeP('b-'+sp,p.prioridade||'')}</td>
       <td style="text-align:center;overflow:visible">${badgeP(sc,p.status||'')}</td>
       <td style="text-align:center;overflow:visible">${badgeP(ss,p.situacao||'')}</td>
@@ -1673,14 +1637,11 @@ function renderProjTable(list) {
   }).join('');
   area.innerHTML = `<div class="tbl-wrap"><table class="data-table">
     <thead><tr>
-      <th style="width:12%">Nome do Projeto</th><th style="width:7%">Área</th>
-      <th style="width:18%">Melhoria / Projeto</th>
+      <th style="width:12%">Nome do Projeto</th><th style="width:6%">Área</th><th style="width:18%">Descrição</th>
       <th style="width:7%">Acionamento</th><th style="width:6%">Início</th>
-      <th style="width:7%">Prev. Entrega</th>
-      <th style="width:7%">Implementação</th>
-      <th style="width:7%">Prazo</th>
-      <th style="width:7%">Prioridade</th><th style="width:7%">Status</th>
-      <th style="width:7%">Situação</th>${actH}
+      <th style="width:8%">Implementação</th><th style="width:6%">Alteração</th>
+      <th style="width:7%">Prioridade</th><th style="width:8%">Status</th>
+      <th style="width:8%">Situação</th>${actH}
     </tr></thead><tbody>${rows}</tbody>
   </table></div>`;
 }
@@ -1701,10 +1662,8 @@ async function submitCadProj(e) {
   const fd = new FormData(document.getElementById('form-cad-proj'));
   try {
     const { error } = await db.from('bi_projetosac').insert([{
-      nome_projeto:fd.get('nome_projeto')||null,
       area:fd.get('area'), melhoria:fd.get('melhoria'), prioridade:fd.get('prioridade'),
       data_acionamento:fd.get('data_acionamento')||null, data_inicio:fd.get('data_inicio')||null,
-      data_prevista_entrega:fd.get('data_prevista_entrega')||null,
       data_implementacao:fd.get('data_implementacao')||null,
       status:fd.get('status'), situacao:fd.get('situacao')||getSit(fd.get('status')),
       usuario_cadastro:USER.id
@@ -1724,13 +1683,11 @@ async function openEditProj(id) {
   document.getElementById('editProjId').textContent = '#'+p.id;
   document.getElementById('epId').value      = p.id;
   document.getElementById('epStatusOld').value = p.status;
-  document.getElementById('epNome').value    = p.nome_projeto||'';
   document.getElementById('epArea').value    = p.area||'';
   document.getElementById('epPrio').value    = p.prioridade||'';
   document.getElementById('epMelhoria').value= p.melhoria||'';
   document.getElementById('epDtAc').value    = (p.data_acionamento&&p.data_acionamento!=='0000-00-00')?p.data_acionamento:'';
   document.getElementById('epDtIn').value    = (p.data_inicio&&p.data_inicio!=='0000-00-00')?p.data_inicio:'';
-  document.getElementById('epDtPrev').value  = (p.data_prevista_entrega&&p.data_prevista_entrega!=='0000-00-00')?p.data_prevista_entrega:'';
   document.getElementById('epDtImpl').value  = (p.data_implementacao&&p.data_implementacao!=='0000-00-00')?p.data_implementacao:'';
   document.getElementById('epStatus').value  = p.status||'';
   document.getElementById('epSit').value     = p.situacao||'';
@@ -1745,13 +1702,11 @@ async function submitEditProj(e) {
   const btn=document.getElementById('btnSalvarProj'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
   const newStatus = document.getElementById('epStatus').value;
   const payload = {
-    nome_projeto:document.getElementById('epNome').value||null,
     area:document.getElementById('epArea').value, melhoria:document.getElementById('epMelhoria').value,
     prioridade:document.getElementById('epPrio').value, status:newStatus,
     situacao:document.getElementById('epSit').value,
     data_acionamento:document.getElementById('epDtAc').value||null,
     data_inicio:document.getElementById('epDtIn').value||null,
-    data_prevista_entrega:document.getElementById('epDtPrev').value||null,
     data_implementacao:document.getElementById('epDtImpl').value||null,
   };
   if (newStatus !== statusOld) payload.data_alteracao_status = today();
@@ -1765,81 +1720,6 @@ async function submitEditProj(e) {
     await loadProjetos();
   } catch(err) { showMsg('msgEditProj','error','❌ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Salvar'; }
-}
-
-async function openProjAtv(id) {
-  document.getElementById('projAtvTitle').textContent = '';
-  document.getElementById('projAtvResumo').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:1rem;"><div class="spin-lg" style="margin:0 auto;"></div></div>';
-  document.getElementById('projAtvPrazoStatus').innerHTML = '';
-  document.getElementById('projAtvLista').innerHTML = '';
-  openM('modalProjAtv');
-
-  const { data:p, error:ep } = await db.from('bi_projetosac').select('*').eq('id',id).single();
-  if (ep||!p) { document.getElementById('projAtvResumo').innerHTML='<div style="color:var(--danger)">Erro ao carregar projeto.</div>'; return; }
-
-  document.getElementById('projAtvTitle').textContent = `#${p.id}${p.nome_projeto?' — '+p.nome_projeto:''}`;
-
-  /* Resumo do projeto */
-  const dItem=(lbl,val)=>`<div class="d-item"><span class="d-label">${lbl}</span><div class="d-value">${val||'—'}</div></div>`;
-  document.getElementById('projAtvResumo').innerHTML =
-    dItem('Área', esc(p.area||''))+
-    dItem('Acionamento', fmtDate(p.data_acionamento))+
-    dItem('Início', fmtDate(p.data_inicio))+
-    dItem('Prev. Entrega', `<strong>${fmtDate(p.data_prevista_entrega)||'Não definida'}</strong>`)+
-    dItem('Implementação', fmtDate(p.data_implementacao))+
-    dItem('Status', `<span class="badge b-${slugify(p.status||'')}">${esc(p.status||'—')}</span>`)+
-    dItem('Situação', `<span class="badge b-${slugify(p.situacao||'')}">${esc(p.situacao||'—')}</span>`)+
-    dItem('Prioridade', `<span class="badge b-${slugify(p.prioridade||'')}">${esc(p.prioridade||'—')}</span>`);
-
-  /* Badge status prazo */
-  const prazo = calcPrazoStatus(p);
-  const prazoMsg = {
-    'b-antes-prazo': `✅ Implementado <strong>${prazo.txt}</strong> do prazo previsto`,
-    'b-no-prazo':    `✅ Implementado <strong>no prazo</strong> previsto`,
-    'b-fora-prazo':  `⚠️ Implementado com <strong>${prazo.txt}</strong> em relação à previsão`,
-    'b-sem-impl':    `⏳ Implementação ainda não registrada`,
-  }[prazo.cls] || '';
-  const prazoColors = {
-    'b-antes-prazo':'rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.25);color:#0e7490',
-    'b-no-prazo':'rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);color:#065f46',
-    'b-fora-prazo':'rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);color:#b91c1c',
-    'b-sem-impl':'rgba(100,116,139,.07);border:1px solid rgba(100,116,139,.2);color:#475569',
-  }[prazo.cls]||'';
-  document.getElementById('projAtvPrazoStatus').innerHTML = `<div style="padding:.55rem .9rem;border-radius:7px;font-size:.8rem;font-weight:600;background:${prazoColors}">${prazoMsg}</div>`;
-
-  /* Atividades */
-  const { data:atvs, error:ea } = await db.from('bi_projetos_atividades').select('*').eq('id_projeto',id).order('data_prevista',{ascending:true});
-  const lista = document.getElementById('projAtvLista');
-  if (ea) { lista.innerHTML='<div style="color:var(--danger);font-size:.8rem;">Erro ao carregar atividades.</div>'; return; }
-  if (!atvs||!atvs.length) { lista.innerHTML='<div class="empty-state" style="height:90px;font-size:.8rem;">Nenhuma atividade cadastrada para este projeto.</div>'; return; }
-
-  const atvStatus = a => {
-    if (a.data_entregue) return { cls:'b-concluido', txt:'Concluída' };
-    if (!a.data_prevista) return { cls:'b-nao-iniciado', txt:'Sem prazo' };
-    const hoje = today(), prev = a.data_prevista;
-    if (prev < hoje) return { cls:'b-atrasado', txt:'Atrasada' };
-    if (prev === hoje) return { cls:'b-em-andamento', txt:'Vence hoje' };
-    return { cls:'b-em-andamento', txt:'Em aberto' };
-  };
-
-  lista.innerHTML = `<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.55rem;">${atvs.length} atividade${atvs.length!==1?'s':''}</div>`+
-  atvs.map(a => {
-    const st = atvStatus(a);
-    return `<div style="border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;margin-bottom:.55rem;background:var(--surface);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.4rem;">
-        <div style="font-size:.82rem;font-weight:700;color:var(--text);">${esc(a.descricao_atividade||'Sem descrição')}</div>
-        <span class="badge ${st.cls}" style="flex-shrink:0;">${st.txt}</span>
-      </div>
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.7rem;color:var(--muted);">
-        ${a.condutor?`<span><i class="bi bi-person"></i> <strong>Condutor:</strong> ${esc(a.condutor)}</span>`:''}
-        ${a.executor?`<span><i class="bi bi-person-check"></i> <strong>Executor:</strong> ${esc(a.executor)}</span>`:''}
-        ${a.area?`<span><i class="bi bi-building"></i> ${esc(a.area)}</span>`:''}
-        ${a.prioridade?`<span class="badge b-${slugify(a.prioridade)}" style="font-size:.62rem;">${esc(a.prioridade)}</span>`:''}
-        ${a.data_prevista?`<span><i class="bi bi-calendar"></i> Prazo: <strong>${fmtDate(a.data_prevista)}</strong></span>`:''}
-        ${a.data_entregue?`<span style="color:var(--success);"><i class="bi bi-check-circle"></i> Entregue: <strong>${fmtDate(a.data_entregue)}</strong></span>`:''}
-      </div>
-    </div>`;
-  }).join('');
 }
 
 async function delProj(id) {
@@ -1979,8 +1859,7 @@ function renderAtvTable(list) {
       <button class="btn-ac del" onclick="delAtv(${a.id})"><i class="bi bi-trash"></i></button>
     </td>`:'';
     return `<tr class="row-click" onclick='openDetAtv(${JSON.stringify(dataJ)})'>
-      <td title="${esc(a.nome_projeto)}">${esc((a.nome_projeto||'').substring(0,30))}${(a.nome_projeto||'').length>30?'…':''}</td>
-      <td title="${esc(a.descricao_atividade)}">${esc((a.descricao_atividade||'').substring(0,45))}${(a.descricao_atividade||'').length>45?'…':''}</td>
+      <td title="${esc(a.nome_projeto)}">${esc((a.nome_projeto||'').substring(0,40))}${(a.nome_projeto||'').length>40?'…':''}</td>
       <td>${esc(a.condutor||'')}</td><td>${esc(a.executor||'')}</td><td>${esc(a.area||'')}</td>
       <td style="text-align:center;overflow:visible"><span class="badge ${pMap[a.prioridade]||''}">${esc(a.prioridade||'')}</span></td>
       <td style="text-align:center">${fmtDate(a.data_prevista)}</td>
@@ -1992,10 +1871,9 @@ function renderAtvTable(list) {
   }).join('');
   area.innerHTML=`<div class="tbl-wrap"><table class="data-table">
     <thead><tr>
-      <th style="width:14%">Projeto</th><th style="width:20%">Descrição</th>
-      <th style="width:8%">Condutor</th><th style="width:10%">Executor</th>
-      <th style="width:7%">Área</th><th style="width:6%">Prior.</th><th style="width:7%">Prev.</th>
-      <th style="width:7%">Entregue</th><th style="width:8%">Status</th><th style="width:7%">Prazo</th>${actH}
+      <th style="width:21%">Projeto</th><th style="width:8%">Condutor</th><th style="width:12%">Executor</th>
+      <th style="width:8%">Área</th><th style="width:7%">Prior.</th><th style="width:7%">Prev.</th>
+      <th style="width:7%">Entregue</th><th style="width:9%">Status</th><th style="width:9%">Prazo</th>${actH}
     </tr></thead><tbody>${rows}</tbody>
   </table></div>`;
 }
@@ -2491,7 +2369,6 @@ function renderTblDrill(list){
 
 /* ─── POPULATE SELECTS ──────────────────── */
 async function populateSelects() {
-  if (USER?._isFake) return; // fake login: sem Supabase
   const [{ data: areas }, { data: condutores }] = await Promise.all([
     db.from('bi_areas').select('*').order('nome'),
     db.from('bi_condutores').select('*').order('nome')
@@ -2637,9 +2514,100 @@ const closeDDIfOut=e=>{ if(e.target.id==='ddOverlay') closeDD(); };
 
 document.addEventListener('keydown', e => {
   if(e.key==='Escape'){
-    closeM('modalEditProj'); closeM('modalDetAtv'); closeM('modalEditAtv'); closeM('modalProjAtv'); closeDD();
+    closeM('modalEditProj'); closeM('modalDetAtv'); closeM('modalEditAtv'); closeDD();
   }
 });
+
+/* ─── MODAL ATIVIDADES DO PROJETO ───────── */
+async function openAtvProjModal(projId, projNome) {
+  document.getElementById('atvProjNome').textContent = projNome || ('Projeto #' + projId);
+  document.getElementById('atvProjCount').textContent = '';
+  document.getElementById('atvProjKpis').innerHTML = '';
+  document.getElementById('atvProjTbody').innerHTML =
+    '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted);"><span class="spin-lg" style="display:block;margin:auto;"></span></td></tr>';
+  openM('modalAtvProj');
+
+  try {
+    const { data, error } = await db
+      .from('bi_projetos_atividades')
+      .select('*')
+      .eq('id_projeto', projId)
+      .order('data_prevista', { ascending: true });
+
+    if (error) throw error;
+
+    const list = (data || []).map(a => ({ ...a, ...computeAtvStatus(a) }));
+    const total    = list.length;
+    const conc     = list.filter(a => a.status_geral === 'Concluído').length;
+    const pend     = list.filter(a => a.status_geral !== 'Concluído').length;
+    const atras    = list.filter(a => a.status_prazo === 'Fora do prazo').length;
+    const hoje_v   = list.filter(a => !a.data_entregue && a.data_prevista === today()).length;
+    const txConc   = total > 0 ? Math.round((conc / total) * 100) : 0;
+
+    /* ── KPI strip ── */
+    const kp = (label, val, color, sub='') => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${color};
+                  border-radius:8px;padding:.55rem 1rem;min-width:100px;flex:1;">
+        <div style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem;">${label}</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--text);line-height:1;">${val}</div>
+        ${sub ? `<div style="font-size:.65rem;color:var(--subtle);margin-top:.15rem;">${sub}</div>` : ''}
+      </div>`;
+
+    document.getElementById('atvProjKpis').innerHTML =
+      kp('Total', total, 'var(--accent)') +
+      kp('Concluídas', conc, 'var(--success)', txConc + '% do total') +
+      kp('Pendentes', pend, 'var(--warning)') +
+      kp('Atrasadas', atras, 'var(--danger)') +
+      kp('Vencem hoje', hoje_v, 'var(--info)');
+
+    document.getElementById('atvProjCount').textContent =
+      total + ' atividade' + (total !== 1 ? 's' : '') + ' encontrada' + (total !== 1 ? 's' : '');
+
+    if (!list.length) {
+      document.getElementById('atvProjTbody').innerHTML =
+        '<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--muted);">' +
+        '<i class="bi bi-inbox" style="font-size:1.8rem;display:block;margin-bottom:.5rem;opacity:.4;"></i>' +
+        'Nenhuma atividade cadastrada para este projeto.</td></tr>';
+      return;
+    }
+
+    const spMap = {
+      'Antes do prazo':'b-antes', 'No prazo':'b-no-prazo',
+      'Fora do prazo':'b-fora',   'Em Aberto':'b-em-aberto'
+    };
+    const sgMap = { 'Concluído':'b-concluido', 'Em andamento':'b-andamento' };
+    const pMap  = { 'Baixo':'b-baixo', 'Médio':'b-medio', 'Alto':'b-alto' };
+
+    document.getElementById('atvProjTbody').innerHTML = list.map(a => {
+      const entFmt = (a.data_entregue && a.data_entregue !== '0000-00-00') ? fmtDate(a.data_entregue) : '—';
+      const rowStyle = a.status_prazo === 'Fora do prazo' && a.status_geral !== 'Concluído'
+        ? 'background:rgba(239,68,68,.04);'
+        : a.data_prevista === today() && !a.data_entregue
+          ? 'background:rgba(245,158,11,.04);'
+          : '';
+      return `<tr style="${rowStyle}">
+        <td style="font-weight:600;" title="${esc(a.nome_atividade||'')}">${esc((a.nome_atividade||'—').substring(0,30))}${(a.nome_atividade||'').length>30?'…':''}</td>
+        <td title="${esc(a.descricao_atividade||'')}">${esc((a.descricao_atividade||'—').substring(0,35))}${(a.descricao_atividade||'').length>35?'…':''}</td>
+        <td>${esc(a.condutor||'—')}</td>
+        <td>${esc(a.executor||'—')}</td>
+        <td>${esc(a.area||'—')}</td>
+        <td style="text-align:center;overflow:visible;"><span class="badge ${pMap[a.prioridade]||''}">${esc(a.prioridade||'—')}</span></td>
+        <td style="text-align:center;">${fmtDate(a.data_prevista)}</td>
+        <td style="text-align:center;font-weight:700;">${entFmt}</td>
+        <td style="text-align:center;overflow:visible;"><span class="badge ${sgMap[a.status_geral]||''}">${esc(a.status_geral)}</span></td>
+        <td style="text-align:center;overflow:visible;"><span class="badge ${spMap[a.status_prazo]||''}">${esc(a.status_prazo)}</span></td>
+      </tr>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('atvProjTbody').innerHTML =
+      `<tr><td colspan="10" style="text-align:center;color:var(--danger);padding:1.5rem;">
+        <i class="bi bi-exclamation-triangle" style="margin-right:.4rem;"></i>
+        Erro ao carregar atividades: ${esc(e.message)}
+      </td></tr>`;
+  }
+}
+
 </script>
 </body>
 </html>
