@@ -435,6 +435,8 @@ body.is-admin .nav-pills .nav-link.admin-only { display:flex; }
 .btn-ac.edit:hover { background:rgba(56,118,155,.22); }
 .btn-ac.del  { background:rgba(239,68,68,.1); color:var(--danger); }
 .btn-ac.del:hover  { background:rgba(239,68,68,.2); }
+.btn-ac.view { background:rgba(16,185,129,.1); color:#059669; }
+.btn-ac.view:hover { background:rgba(16,185,129,.2); }
 
 /* ═══════════════════════════════════════════════════
    KPI CARDS
@@ -1126,7 +1128,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="cfg-panel" id="cfgp-usuarios">
           <div class="cfg-card">
             <h4><i class="bi bi-person-plus"></i>Adicionar Usuário</h4>
-            <!-- <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p> -->
+            <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p>
             <div class="cfg-add-row">
               <input type="email" id="cfgNewUsrEmail" placeholder="email@empresa.com">
               <input type="password" id="cfgNewUsrPass" placeholder="Senha..." style="max-width:160px;">
@@ -1292,6 +1294,51 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
 <!-- ═══════════════════════════════════════════════════
      SCRIPT
 ═══════════════════════════════════════════════════ -->
+
+<!-- ═══ MODAL ATIVIDADES DO PROJETO ═══ -->
+<div class="modal-overlay" id="modalAtvProj" onclick="closeMIfOut(event,'modalAtvProj')">
+  <div class="modal-box" style="max-width:1000px;max-height:90vh;display:flex;flex-direction:column;">
+    <div class="modal-hdr" style="flex-shrink:0;">
+      <h3>
+        <i class="bi bi-list-check" style="color:var(--accent);margin-right:.4rem;"></i>
+        Atividades — <span id="atvProjNome" style="color:var(--accent);"></span>
+      </h3>
+      <button class="btn-close" onclick="closeM('modalAtvProj')">×</button>
+    </div>
+
+    <!-- KPIs strip -->
+    <div id="atvProjKpis" style="display:flex;gap:.6rem;padding:.85rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;"></div>
+
+    <!-- Tabela -->
+    <div class="modal-body" style="padding:0;flex:1;overflow-y:auto;">
+      <table class="data-table" style="table-layout:auto;min-width:720px;">
+        <thead>
+          <tr>
+            <th>Nome da Atividade</th>
+            <th>Descrição</th>
+            <th>Condutor</th>
+            <th>Executor</th>
+            <th>Área</th>
+            <th>Prioridade</th>
+            <th>Prevista</th>
+            <th>Entregue</th>
+            <th>Status</th>
+            <th>Prazo</th>
+          </tr>
+        </thead>
+        <tbody id="atvProjTbody">
+          <tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted);">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-ftr" style="flex-shrink:0;">
+      <div id="atvProjCount" style="margin-right:auto;font-size:.75rem;color:var(--muted);"></div>
+      <button class="btn-modal-sec" onclick="closeM('modalAtvProj')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ─── CONFIG ─────────────────────────────── */
 const SUPABASE_URL      = 'https://jbrcfvduswjmccqmtfxe.supabase.co';
@@ -1561,13 +1608,19 @@ function renderProjTable(list) {
   if (!list.length) {
     area.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i> Nenhum projeto encontrado.</div>'; return;
   }
-  const actH = ADMIN ? '<th style="width:7%">Ações</th>' : '';
+  const actH = '<th style="width:9%">Ações</th>';
   const rows = list.map(p => {
     const sc = slugify(p.status||''), sp = slugify(p.prioridade||''), ss = slugify(p.situacao||'');
-    const act = ADMIN ? `<td style="text-align:center;overflow:visible;" onclick="event.stopPropagation()">
-      <button class="btn-ac edit" onclick="openEditProj(${p.id})"><i class="bi bi-pencil"></i></button>
-      <button class="btn-ac del"  onclick="delProj(${p.id})"><i class="bi bi-trash"></i></button>
-    </td>` : '';
+    const nomeProjEsc = (p.nome_projeto||p.melhoria||'Projeto #'+p.id).replace(/'/g,"\\'");
+    const act = ADMIN
+      ? `<td style="text-align:center;overflow:visible;" onclick="event.stopPropagation()">
+          <button class="btn-ac view" onclick="openAtvProjModal(${p.id},'${nomeProjEsc}')" title="Ver atividades"><i class="bi bi-list-check"></i></button>
+          <button class="btn-ac edit" onclick="openEditProj(${p.id})" title="Editar"><i class="bi bi-pencil"></i></button>
+          <button class="btn-ac del"  onclick="delProj(${p.id})" title="Excluir"><i class="bi bi-trash"></i></button>
+        </td>`
+      : `<td style="text-align:center;overflow:visible;" onclick="event.stopPropagation()">
+          <button class="btn-ac view" onclick="openAtvProjModal(${p.id},'${nomeProjEsc}')" title="Ver atividades"><i class="bi bi-list-check"></i></button>
+        </td>`;
     return `<tr class="row-click" onclick='openDescModal("${esc(p.melhoria||'')}","#${p.id}")'>
       <td style="font-weight:600;" title="${esc(p.nome_projeto||'')}">${esc((p.nome_projeto||'—').substring(0,30))}${(p.nome_projeto||'').length>30?'…':''}</td>
       <td>${esc(p.area||'')}</td>
@@ -2464,6 +2517,97 @@ document.addEventListener('keydown', e => {
     closeM('modalEditProj'); closeM('modalDetAtv'); closeM('modalEditAtv'); closeDD();
   }
 });
+
+/* ─── MODAL ATIVIDADES DO PROJETO ───────── */
+async function openAtvProjModal(projId, projNome) {
+  document.getElementById('atvProjNome').textContent = projNome || ('Projeto #' + projId);
+  document.getElementById('atvProjCount').textContent = '';
+  document.getElementById('atvProjKpis').innerHTML = '';
+  document.getElementById('atvProjTbody').innerHTML =
+    '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted);"><span class="spin-lg" style="display:block;margin:auto;"></span></td></tr>';
+  openM('modalAtvProj');
+
+  try {
+    const { data, error } = await db
+      .from('bi_projetos_atividades')
+      .select('*')
+      .eq('id_projeto', projId)
+      .order('data_prevista', { ascending: true });
+
+    if (error) throw error;
+
+    const list = (data || []).map(a => ({ ...a, ...computeAtvStatus(a) }));
+    const total    = list.length;
+    const conc     = list.filter(a => a.status_geral === 'Concluído').length;
+    const pend     = list.filter(a => a.status_geral !== 'Concluído').length;
+    const atras    = list.filter(a => a.status_prazo === 'Fora do prazo').length;
+    const hoje_v   = list.filter(a => !a.data_entregue && a.data_prevista === today()).length;
+    const txConc   = total > 0 ? Math.round((conc / total) * 100) : 0;
+
+    /* ── KPI strip ── */
+    const kp = (label, val, color, sub='') => `
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${color};
+                  border-radius:8px;padding:.55rem 1rem;min-width:100px;flex:1;">
+        <div style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem;">${label}</div>
+        <div style="font-size:1.4rem;font-weight:800;color:var(--text);line-height:1;">${val}</div>
+        ${sub ? `<div style="font-size:.65rem;color:var(--subtle);margin-top:.15rem;">${sub}</div>` : ''}
+      </div>`;
+
+    document.getElementById('atvProjKpis').innerHTML =
+      kp('Total', total, 'var(--accent)') +
+      kp('Concluídas', conc, 'var(--success)', txConc + '% do total') +
+      kp('Pendentes', pend, 'var(--warning)') +
+      kp('Atrasadas', atras, 'var(--danger)') +
+      kp('Vencem hoje', hoje_v, 'var(--info)');
+
+    document.getElementById('atvProjCount').textContent =
+      total + ' atividade' + (total !== 1 ? 's' : '') + ' encontrada' + (total !== 1 ? 's' : '');
+
+    if (!list.length) {
+      document.getElementById('atvProjTbody').innerHTML =
+        '<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--muted);">' +
+        '<i class="bi bi-inbox" style="font-size:1.8rem;display:block;margin-bottom:.5rem;opacity:.4;"></i>' +
+        'Nenhuma atividade cadastrada para este projeto.</td></tr>';
+      return;
+    }
+
+    const spMap = {
+      'Antes do prazo':'b-antes', 'No prazo':'b-no-prazo',
+      'Fora do prazo':'b-fora',   'Em Aberto':'b-em-aberto'
+    };
+    const sgMap = { 'Concluído':'b-concluido', 'Em andamento':'b-andamento' };
+    const pMap  = { 'Baixo':'b-baixo', 'Médio':'b-medio', 'Alto':'b-alto' };
+
+    document.getElementById('atvProjTbody').innerHTML = list.map(a => {
+      const entFmt = (a.data_entregue && a.data_entregue !== '0000-00-00') ? fmtDate(a.data_entregue) : '—';
+      const rowStyle = a.status_prazo === 'Fora do prazo' && a.status_geral !== 'Concluído'
+        ? 'background:rgba(239,68,68,.04);'
+        : a.data_prevista === today() && !a.data_entregue
+          ? 'background:rgba(245,158,11,.04);'
+          : '';
+      return `<tr style="${rowStyle}">
+        <td style="font-weight:600;" title="${esc(a.nome_atividade||'')}">${esc((a.nome_atividade||'—').substring(0,30))}${(a.nome_atividade||'').length>30?'…':''}</td>
+        <td title="${esc(a.descricao_atividade||'')}">${esc((a.descricao_atividade||'—').substring(0,35))}${(a.descricao_atividade||'').length>35?'…':''}</td>
+        <td>${esc(a.condutor||'—')}</td>
+        <td>${esc(a.executor||'—')}</td>
+        <td>${esc(a.area||'—')}</td>
+        <td style="text-align:center;overflow:visible;"><span class="badge ${pMap[a.prioridade]||''}">${esc(a.prioridade||'—')}</span></td>
+        <td style="text-align:center;">${fmtDate(a.data_prevista)}</td>
+        <td style="text-align:center;font-weight:700;">${entFmt}</td>
+        <td style="text-align:center;overflow:visible;"><span class="badge ${sgMap[a.status_geral]||''}">${esc(a.status_geral)}</span></td>
+        <td style="text-align:center;overflow:visible;"><span class="badge ${spMap[a.status_prazo]||''}">${esc(a.status_prazo)}</span></td>
+      </tr>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('atvProjTbody').innerHTML =
+      `<tr><td colspan="10" style="text-align:center;color:var(--danger);padding:1.5rem;">
+        <i class="bi bi-exclamation-triangle" style="margin-right:.4rem;"></i>
+        Erro ao carregar atividades: ${esc(e.message)}
+      </td></tr>`;
+  }
+}
+
 </script>
 </body>
 </html>
