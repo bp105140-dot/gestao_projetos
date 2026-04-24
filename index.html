@@ -93,7 +93,10 @@ body {
 ═══════════════════════════════════════════════════ */
 #loginScreen {
   position:fixed; inset:0; background:var(--bg);
-  display:flex; align-items:center; justify-content:center; z-index:9999;
+  display:none; align-items:center; justify-content:center; z-index:9999;
+}
+#loginScreen.show {
+  display:flex;
 }
 .login-wrap {
   width:100%; max-width:400px; padding:1rem;
@@ -1363,11 +1366,6 @@ window._atvList = [];
 
 /* ─── AUTH ──────────────────────────────── */
 
-/* Fake login para desenvolvimento — remove em produção.
-   Credenciais: admin@admin / 123456                     */
-const FAKE_USERS  = [{ email:'admin@admin', password:'123456', isAdmin:true }];
-const _FAKE_KEY   = 'bi_fake_sess';
-
 /* ─── INATIVIDADE: logout após 20 min sem interação ─── */
 const INACT_MS = 20 * 60 * 1000;   /* 20 minutos */
 let   _inactTimer = null;
@@ -1406,14 +1404,6 @@ async function doLogin() {
   errEl.classList.remove('show');
   btn.innerHTML = '<span class="spin"></span> Entrando...'; btn.disabled = true;
 
-  /* Fake login */
-  const fake = FAKE_USERS.find(u => u.email === email && u.password === pass);
-  if (fake) {
-    const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:fake.email, _isFake:true, _isAdmin:fake.isAdmin };
-    localStorage.setItem(_FAKE_KEY, JSON.stringify({ email:fake.email, isAdmin:fake.isAdmin }));
-    await initApp(fakeUser); return;
-  }
-
   try {
     const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
@@ -1427,13 +1417,10 @@ async function doLogin() {
 
 async function doLogout() {
   _stopInact();
-  localStorage.removeItem(_FAKE_KEY);
-  if (USER?._isFake) { USER = null; location.reload(); return; }
   await db.auth.signOut(); location.reload();
 }
 
 async function checkAdmin(uid) {
-  if (USER?._isFake) return USER._isAdmin === true;
   try {
     const { data } = await db.from('profiles').select('is_admin').eq('id', uid).single();
     return data?.is_admin === true;
@@ -1443,7 +1430,7 @@ async function checkAdmin(uid) {
 async function initApp(user) {
   if (USER) return;                             /* evita dupla inicialização */
   USER = user; ADMIN = await checkAdmin(user.id);
-  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('show');
   document.getElementById('app').style.display = 'block';
   const initials = user.email[0].toUpperCase();
   document.getElementById('sbAvatar').textContent = initials;
@@ -1465,30 +1452,18 @@ db.auth.onAuthStateChange((ev, sess) => {
   }
 });
 
-/* Ao carregar a página: tenta restaurar sessão fake ou Supabase */
+/* Ao carregar a página: tenta restaurar sessão Supabase */
 (async () => {
-  /* 1. Fake session gravada no localStorage */
-  try {
-    const saved = localStorage.getItem(_FAKE_KEY);
-    if (saved) {
-      const p = JSON.parse(saved);
-      const fakeUser = { id:'00000000-0000-0000-0000-000000000000', email:p.email, _isFake:true, _isAdmin:p.isAdmin };
-      await initApp(fakeUser); return;
-    }
-  } catch(_) {}
-  /* 2. Sessão real Supabase */
   const { data:{ session } } = await db.auth.getSession();
-  if (session?.user) await initApp(session.user);
+  if (session?.user) {
+    await initApp(session.user);
+  } else {
+    document.getElementById('loginScreen').classList.add('show');
+  }
 })();
 
 document.getElementById('lPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('lEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('lPass').focus(); });
-
-/* Preenche login fake automaticamente — remove em produção */
-(function(){
-  document.getElementById('lEmail').value = 'admin@admin';
-  document.getElementById('lPass').value  = '123456';
-})();
 
 /* ─── SIDEBAR TOGGLE ────────────────────── */
 document.getElementById('sbToggle').addEventListener('click', () => {
@@ -1566,13 +1541,13 @@ function computeAtvStatus(a) {
 
 /* ─── SUPABASE DATA ─────────────────────── */
 async function loadProjetos() {
-  const { data } = await db.from('bi_projetosac').select('id,nome_projeto').order('id',{ascending:false});
+  const { data } = await db.from('bi_projetosac').select('id,melhoria').order('id',{ascending:false});
   PROJETOS = data || [];
   const opts = '<option value="">Selecione o Projeto...</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">${esc((p.nome_projeto||'').substring(0,60))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,60))}</option>`).join('');
   ['cadAtvProjeto','eaProjeto'].forEach(id => document.getElementById(id).innerHTML = opts);
   const visOpts = '<option value="">Todos</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">${esc((p.nome_projeto||'').substring(0,40))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,40))}</option>`).join('');
   document.getElementById('fvaProjeto').innerHTML = visOpts;
 }
 
@@ -1596,7 +1571,7 @@ async function fetchProj(f={}) {
 }
 
 async function fetchAtv(f={}) {
-  let q = db.from('bi_projetos_atividades').select('*,bi_projetosac(nome_projeto)').order('data_cadastro',{ascending:false});
+  let q = db.from('bi_projetos_atividades').select('*,bi_projetosac(melhoria)').order('data_cadastro',{ascending:false});
   if (f.condutor)   q = q.eq('condutor',f.condutor);
   if (f.area)       q = q.eq('area',f.area);
   if (f.prioridade) q = q.eq('prioridade',f.prioridade);
@@ -1606,7 +1581,7 @@ async function fetchAtv(f={}) {
   else if (f.data_inicio) q = q.gte('data_prevista',f.data_inicio);
   else if (f.data_fim)    q = q.lte('data_prevista',f.data_fim);
   const { data, error } = await q; if (error) throw error;
-  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.nome_projeto||'Sem Projeto', ...computeAtvStatus(a)}));
+  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.melhoria||'Sem Projeto', ...computeAtvStatus(a)}));
 }
 
 /* ─── PROJETOS CRUD ─────────────────────── */
@@ -2491,7 +2466,6 @@ function renderTblDrill(list){
 
 /* ─── POPULATE SELECTS ──────────────────── */
 async function populateSelects() {
-  if (USER?._isFake) return; // fake login: sem Supabase
   const [{ data: areas }, { data: condutores }] = await Promise.all([
     db.from('bi_areas').select('*').order('nome'),
     db.from('bi_condutores').select('*').order('nome')
