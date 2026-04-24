@@ -1566,13 +1566,13 @@ function computeAtvStatus(a) {
 
 /* ─── SUPABASE DATA ─────────────────────── */
 async function loadProjetos() {
-  const { data } = await db.from('bi_projetosac').select('id,melhoria').order('id',{ascending:false});
+  const { data } = await db.from('bi_projetosac').select('id,nome_projeto').order('id',{ascending:false});
   PROJETOS = data || [];
   const opts = '<option value="">Selecione o Projeto...</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,60))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">${esc((p.nome_projeto||'').substring(0,60))}</option>`).join('');
   ['cadAtvProjeto','eaProjeto'].forEach(id => document.getElementById(id).innerHTML = opts);
   const visOpts = '<option value="">Todos</option>' +
-    PROJETOS.map(p=>`<option value="${p.id}">#${p.id} – ${esc((p.melhoria||'').substring(0,40))}</option>`).join('');
+    PROJETOS.map(p=>`<option value="${p.id}">${esc((p.nome_projeto||'').substring(0,40))}</option>`).join('');
   document.getElementById('fvaProjeto').innerHTML = visOpts;
 }
 
@@ -1596,7 +1596,7 @@ async function fetchProj(f={}) {
 }
 
 async function fetchAtv(f={}) {
-  let q = db.from('bi_projetos_atividades').select('*,bi_projetosac(melhoria)').order('data_cadastro',{ascending:false});
+  let q = db.from('bi_projetos_atividades').select('*,bi_projetosac(nome_projeto)').order('data_cadastro',{ascending:false});
   if (f.condutor)   q = q.eq('condutor',f.condutor);
   if (f.area)       q = q.eq('area',f.area);
   if (f.prioridade) q = q.eq('prioridade',f.prioridade);
@@ -1606,7 +1606,7 @@ async function fetchAtv(f={}) {
   else if (f.data_inicio) q = q.gte('data_prevista',f.data_inicio);
   else if (f.data_fim)    q = q.lte('data_prevista',f.data_fim);
   const { data, error } = await q; if (error) throw error;
-  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.melhoria||'Sem Projeto', ...computeAtvStatus(a)}));
+  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.nome_projeto||'Sem Projeto', ...computeAtvStatus(a)}));
 }
 
 /* ─── PROJETOS CRUD ─────────────────────── */
