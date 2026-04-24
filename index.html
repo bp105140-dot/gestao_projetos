@@ -1126,7 +1126,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="cfg-panel" id="cfgp-usuarios">
           <div class="cfg-card">
             <h4><i class="bi bi-person-plus"></i>Adicionar Usuário</h4>
-            <!-- <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p> -->
+            <p class="cfg-hint"><i class="bi bi-info-circle"></i> Para acesso imediato, desative a confirmação de e-mail: <strong>Supabase → Authentication → Providers → Email → desmarque "Confirm email"</strong></p>
             <div class="cfg-add-row">
               <input type="email" id="cfgNewUsrEmail" placeholder="email@empresa.com">
               <input type="password" id="cfgNewUsrPass" placeholder="Senha..." style="max-width:160px;">
@@ -1569,8 +1569,9 @@ function renderProjTable(list) {
       <button class="btn-ac del"  onclick="delProj(${p.id})"><i class="bi bi-trash"></i></button>
     </td>` : '';
     return `<tr class="row-click" onclick='openDescModal("${esc(p.melhoria||'')}","#${p.id}")'>
+      <td style="font-weight:600;" title="${esc(p.nome_projeto||'')}">${esc((p.nome_projeto||'—').substring(0,30))}${(p.nome_projeto||'').length>30?'…':''}</td>
       <td>${esc(p.area||'')}</td>
-      <td title="${esc(p.melhoria||'')}">${esc((p.melhoria||'').substring(0,70))}${(p.melhoria||'').length>70?'…':''}</td>
+      <td title="${esc(p.melhoria||'')}">${esc((p.melhoria||'').substring(0,55))}${(p.melhoria||'').length>55?'…':''}</td>
       <td style="text-align:center">${fmtDate(p.data_acionamento)}</td>
       <td style="text-align:center">${fmtDate(p.data_inicio)}</td>
       <td style="text-align:center;font-weight:700">${fmtDate(p.data_implementacao)}</td>
@@ -1583,11 +1584,11 @@ function renderProjTable(list) {
   }).join('');
   area.innerHTML = `<div class="tbl-wrap"><table class="data-table">
     <thead><tr>
-      <th style="width:7%">Área</th><th style="width:22%">Melhoria / Projeto</th>
-      <th style="width:8%">Acionamento</th><th style="width:7%">Início</th>
-      <th style="width:9%">Implementação</th><th style="width:7%">Alteração</th>
-      <th style="width:8%">Prioridade</th><th style="width:9%">Status</th>
-      <th style="width:9%">Situação</th>${actH}
+      <th style="width:12%">Nome do Projeto</th><th style="width:6%">Área</th><th style="width:18%">Descrição</th>
+      <th style="width:7%">Acionamento</th><th style="width:6%">Início</th>
+      <th style="width:8%">Implementação</th><th style="width:6%">Alteração</th>
+      <th style="width:7%">Prioridade</th><th style="width:8%">Status</th>
+      <th style="width:8%">Situação</th>${actH}
     </tr></thead><tbody>${rows}</tbody>
   </table></div>`;
 }
