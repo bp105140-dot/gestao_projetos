@@ -1385,13 +1385,13 @@ async function doLogout() {
   await db.auth.signOut(); location.reload();
 }
 
-async function checkAdmin(uid) {
-  if (USER?._isFake) return USER._isAdmin === true;
-  try {
-    const { data } = await db.from('profiles').select('is_admin').eq('id', uid).single();
-    return data?.is_admin === true;
-  } catch { return false; }
-}
+// async function checkAdmin(uid) {
+//   if (USER?._isFake) return USER._isAdmin === true;
+//   try {
+//     const { data } = await db.from('profiles').select('is_admin').eq('id', uid).single();
+//     return data?.is_admin === true;
+//   } catch { return false; }
+// }
 
 async function initApp(user) {
   if (USER) return;                             /* evita dupla inicialização */
