@@ -999,7 +999,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <form id="form-cad-atv" onsubmit="submitCadAtv(event)">
             <div class="f-row">
               <div class="f-grp">
-                <label>1. Condutor</label>
+                <label>1. Solicitante</label>
                 <select name="condutor" id="cadAtvCondutor" required>
                   <option value="">Carregando...</option>
                 </select>
@@ -1061,7 +1061,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Até</label><input type="date" id="fvaDtFim"></div>
           <div class="fb-grp"><label>Projeto</label>
             <select id="fvaProjeto"><option value="">Todos</option></select></div>
-          <div class="fb-grp"><label>Condutor</label>
+          <div class="fb-grp"><label>Solicitante</label>
             <select id="fvaCondutor"><option value="">Todos</option></select></div>
           <div class="fb-grp"><label>Área</label>
             <select id="fvaArea"><option value="">Todas</option></select></div>
@@ -1084,7 +1084,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Buscar</label><input type="text" id="fiaBusca"></div>
           <div class="fb-grp"><label>Prazo de</label><input type="date" id="fiaDtIni"></div>
           <div class="fb-grp"><label>Até</label><input type="date" id="fiaDtFim"></div>
-          <div class="fb-grp"><label>Condutor</label>
+          <div class="fb-grp"><label>Solicitante</label>
             <select id="fiaCondutor"><option value="">Todos</option></select></div>
           <div class="fb-grp"><label>Área</label>
             <select id="fiaArea"><option value="">Todas</option></select></div>
@@ -1106,7 +1106,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <div class="cfg-tabs">
           <button class="cfg-tab active" onclick="cfgTab('areas-proj',this)"><i class="bi bi-buildings"></i> Áreas · Projetos</button>
           <button class="cfg-tab" onclick="cfgTab('areas-atv',this)"><i class="bi bi-buildings"></i> Áreas · Atividades</button>
-          <button class="cfg-tab" onclick="cfgTab('condutores',this)"><i class="bi bi-person-badge"></i> Condutores</button>
+          <button class="cfg-tab" onclick="cfgTab('condutores',this)"><i class="bi bi-person-badge"></i> Solicitantes</button>
           <button class="cfg-tab" onclick="cfgTab('usuarios',this)"><i class="bi bi-people"></i> Usuários</button>
         </div>
 
@@ -1137,9 +1137,9 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
         <!-- Condutores -->
         <div class="cfg-panel" id="cfgp-condutores">
           <div class="cfg-card">
-            <h4><i class="bi bi-person-badge"></i>Condutores</h4>
+            <h4><i class="bi bi-person-badge"></i>Solicitantes</h4>
             <div class="cfg-add-row">
-              <input type="text" id="cfgNewCondutor" placeholder="Nome do condutor..." onkeydown="if(event.key==='Enter')addCondutor()">
+              <input type="text" id="cfgNewCondutor" placeholder="Nome do solicitante..." onkeydown="if(event.key==='Enter')addCondutor()">
               <button class="cfg-add-btn" onclick="addCondutor()"><i class="bi bi-plus-lg"></i>Adicionar</button>
             </div>
             <div class="cfg-list" id="cfgListCondutor"><div class="cfg-empty"><div class="spin-lg"></div></div></div>
@@ -1252,7 +1252,7 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
       <form id="formEditAtv" onsubmit="submitEditAtv(event)">
         <input type="hidden" id="eaId">
         <div class="f-row">
-          <div class="f-grp"><label>Condutor</label>
+          <div class="f-grp"><label>Solicitante</label>
             <select id="eaCondutor" required>
               <option value="">Selecione...</option>
             </select></div>
@@ -1968,7 +1968,7 @@ function renderAtvTable(list) {
   area.innerHTML=`<div class="tbl-wrap"><table class="data-table">
     <thead><tr>
       <th style="width:14%">Projeto</th><th style="width:20%">Descrição</th>
-      <th style="width:8%">Condutor</th><th style="width:10%">Executor</th>
+      <th style="width:8%">Solicitante</th><th style="width:10%">Executor</th>
       <th style="width:7%">Área</th><th style="width:6%">Prior.</th><th style="width:7%">Prev.</th>
       <th style="width:7%">Entregue</th><th style="width:8%">Status</th><th style="width:7%">Prazo</th>${actH}
     </tr></thead><tbody>${rows}</tbody>
@@ -1981,7 +1981,7 @@ function openDetAtv(jsonStr) {
   document.getElementById('detAtvGrid').innerHTML=`
     <div class="d-item sp4"><span class="d-label">Projeto / Melhoria</span><span class="d-value hl">${esc(info.projeto)}</span></div>
     <div class="d-item sp4"><span class="d-label">Descrição da Atividade</span><span class="d-value">${esc(info.atividade)}</span></div>
-    <div class="d-item"><span class="d-label">Condutor</span><span class="d-value">${esc(info.condutor)}</span></div>
+    <div class="d-item"><span class="d-label">Solicitante</span><span class="d-value">${esc(info.condutor)}</span></div>
     <div class="d-item"><span class="d-label">Executor</span><span class="d-value">${esc(info.executor)}</span></div>
     <div class="d-item"><span class="d-label">Área</span><span class="d-value">${esc(info.area)}</span></div>
     <div class="d-item"><span class="d-label">Prioridade</span><span class="d-value">${esc(info.prioridade)}</span></div>
@@ -2252,7 +2252,7 @@ function renderIndAtv(list){
   </div><div class="chart-body" style="height:150px;"><canvas id="chProj"></canvas></div></div></div>
 
   <div class="dash-grid" style="grid-template-rows:260px 240px 280px;">
-    <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-person-circle"></i>Condutores</div></div><div class="chart-body"><canvas id="chCond"></canvas></div></div>
+    <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-person-circle"></i>Solicitantes</div></div><div class="chart-body"><canvas id="chCond"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-flag"></i>Prioridades</div></div><div class="chart-body"><canvas id="chPrio2"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-circle-half"></i>Status Geral</div></div><div class="chart-body"><canvas id="chStat"></canvas></div></div>
 
