@@ -1631,7 +1631,7 @@ function renderProjTable(list) {
       <button class="btn-ac atv" onclick="openProjAtv(${p.id})" title="Ver atividades"><i class="bi bi-list-check"></i></button>
       ${actEdit}
     </td>`;
-    return `<tr class="row-click" onclick='openDescModal("${esc(p.melhoria||'')}","#${p.id}")'>
+    return `<tr class="row-click" onclick='openDescModal("${esc(p.melhoria||'')}","${esc(p.nome_projeto||'Projeto')}")'>
       <td style="font-weight:600">${esc(p.nome_projeto||'—')}</td>
       <td>${esc(p.area||'')}</td>
       <td title="${esc(p.melhoria||'')}">${esc((p.melhoria||'').substring(0,55))}${(p.melhoria||'').length>55?'…':''}</td>
@@ -1806,7 +1806,7 @@ async function openProjAtv(id) {
         <span class="badge ${st.cls}" style="flex-shrink:0;">${st.txt}</span>
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:.7rem;color:var(--muted);">
-        ${a.condutor?`<span><i class="bi bi-person"></i> <strong>Condutor:</strong> ${esc(a.condutor)}</span>`:''}
+        ${a.condutor?`<span><i class="bi bi-person"></i> <strong>Solicitante:</strong> ${esc(a.condutor)}</span>`:''}
         ${a.executor?`<span><i class="bi bi-person-check"></i> <strong>Executor:</strong> ${esc(a.executor)}</span>`:''}
         ${a.area?`<span><i class="bi bi-building"></i> ${esc(a.area)}</span>`:''}
         ${a.prioridade?`<span class="badge b-${slugify(a.prioridade)}" style="font-size:.62rem;">${esc(a.prioridade)}</span>`:''}
@@ -2252,7 +2252,7 @@ function renderIndAtv(list){
   </div><div class="chart-body" style="height:150px;"><canvas id="chProj"></canvas></div></div></div>
 
   <div class="dash-grid" style="grid-template-rows:260px 240px 280px;">
-    <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-person-circle"></i>Solicitantes</div></div><div class="chart-body"><canvas id="chCond"></canvas></div></div>
+    <div class="chart-card col-4 clickable" id="cardCond"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-person-circle"></i>Solicitantes</div><span class="drill-hint">🔍 clique</span></div><div class="chart-body"><canvas id="chCond"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-flag"></i>Prioridades</div></div><div class="chart-body"><canvas id="chPrio2"></canvas></div></div>
     <div class="chart-card col-4"><div class="chart-hdr"><div class="chart-title"><i class="bi bi-circle-half"></i>Status Geral</div></div><div class="chart-body"><canvas id="chStat"></canvas></div></div>
 
@@ -2285,7 +2285,14 @@ function renderIndAtv(list){
   </div>`;
 
   mkMisto('chProj',lProj,qProj,t);
-  mkDonut('chCond',lCond,qCond,lCond.map((_,i)=>CORES[i%CORES.length]));
+  const _chCond = mkDonut('chCond',lCond,qCond,lCond.map((_,i)=>CORES[i%CORES.length]));
+  document.getElementById('chCond').onclick = e => {
+    const pts = _chCond.getElementsAtEventForMode(e,'nearest',{intersect:true},false);
+    abrirDrill(pts.length ? lCond[pts[0].index] : '__todos__', 'condutor');
+  };
+  document.getElementById('cardCond').addEventListener('click', e => {
+    if (!e.target.closest('canvas')) abrirDrill('__todos__','condutor');
+  });
   mkDonut('chPrio2',lPrio,qPrio,prioColors);
   mkDonut('chStat',['Concluído','Em andamento'],[conc,andm],['#10b981','#38769b']);
   mkMisto('chExec',lExec,qExec,t,(e,active)=>{if(active.length) abrirDrill(lExec[active[0].index],'executor');});
@@ -2340,7 +2347,7 @@ function openDD(){
 
 function abrirDrill(valInicial,campo){
   openDD();
-  document.getElementById('ddTitle').textContent='Detalhamento por '+(campo==='executor'?'Executor':'Área');
+  document.getElementById('ddTitle').textContent='Detalhamento por '+(campo==='executor'?'Executor':campo==='condutor'?'Solicitante':'Área');
   const vals=unique(window._atvList,campo);
   let sel=`<label>Filtrar:</label><select onchange="updDrill(this.value,'${campo}')">
     <option value="__todos__">Todos</option>`;
@@ -2529,7 +2536,7 @@ async function loadConfigCondutores() {
   const { data } = await db.from('bi_condutores').select('*').order('nome');
   document.getElementById('cfgListCondutor').innerHTML = (data||[]).length
     ? (data||[]).map(c=>`<div class="cfg-item"><span>${esc(c.nome)}</span><button class="cfg-del" onclick="delCondutor(${c.id})" title="Remover"><i class="bi bi-trash"></i></button></div>`).join('')
-    : '<div class="cfg-empty">Nenhum condutor cadastrado.</div>';
+    : '<div class="cfg-empty">Nenhum solicitante cadastrado.</div>';
 }
 
 async function addCondutor() {
@@ -2539,11 +2546,11 @@ async function addCondutor() {
   if (error) { Swal.fire({toast:true,position:'top-end',icon:'error',title:error.message,showConfirmButton:false,timer:3000}); return; }
   document.getElementById('cfgNewCondutor').value = '';
   await Promise.all([loadConfigCondutores(), populateSelects()]);
-  Swal.fire({toast:true,position:'top-end',icon:'success',title:'Condutor adicionado!',showConfirmButton:false,timer:2000});
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:'Solicitante adicionado!',showConfirmButton:false,timer:2000});
 }
 
 async function delCondutor(id) {
-  const r = await Swal.fire({title:'Remover condutor?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
+  const r = await Swal.fire({title:'Remover solicitante?',icon:'warning',width:'320px',showCancelButton:true,confirmButtonText:'Remover',cancelButtonText:'Cancelar'});
   if (!r.isConfirmed) return;
   await db.from('bi_condutores').delete().eq('id',id);
   await Promise.all([loadConfigCondutores(), populateSelects()]);
