@@ -1068,6 +1068,9 @@ div:where(.swal2-icon) { transform:scale(.7) !important; margin:0 auto .5rem !im
           <div class="fb-grp"><label>Prioridade</label>
             <select id="fvaPrio"><option value="">Todas</option>
               <option>Baixo</option><option>Médio</option><option>Alto</option></select></div>
+          <div class="fb-grp"><label>Status</label>
+            <select id="fvaStatus"><option value="">Todos</option>
+              <option>Em andamento</option><option>Concluído</option></select></div>
           <div class="fb-btns">
             <button class="btn-fb apply" onclick="loadAtv()">Filtrar</button>
             <button class="btn-fb clear" onclick="clearFva()">Limpar</button>
@@ -1581,7 +1584,9 @@ async function fetchAtv(f={}) {
   else if (f.data_inicio) q = q.gte('data_prevista',f.data_inicio);
   else if (f.data_fim)    q = q.lte('data_prevista',f.data_fim);
   const { data, error } = await q; if (error) throw error;
-  return (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.nome_projeto||'Sem Projeto', ...computeAtvStatus(a)}));
+  let result = (data||[]).map(a=>({...a, nome_projeto:a.bi_projetosac?.nome_projeto||'Sem Projeto', ...computeAtvStatus(a)}));
+  if (f.status_geral) result = result.filter(a => a.status_geral === f.status_geral);
+  return result;
 }
 
 /* ─── PROJETOS CRUD ─────────────────────── */
@@ -1925,10 +1930,11 @@ function getFva() {
   return { busca:document.getElementById('fvaBusca').value.trim(),
     data_inicio:document.getElementById('fvaDtIni').value, data_fim:document.getElementById('fvaDtFim').value,
     id_projeto:document.getElementById('fvaProjeto').value, condutor:document.getElementById('fvaCondutor').value,
-    area:document.getElementById('fvaArea').value, prioridade:document.getElementById('fvaPrio').value };
+    area:document.getElementById('fvaArea').value, prioridade:document.getElementById('fvaPrio').value,
+    status_geral:document.getElementById('fvaStatus').value };
 }
 function clearFva() {
-  ['fvaBusca','fvaDtIni','fvaDtFim','fvaProjeto','fvaCondutor','fvaArea','fvaPrio'].forEach(id=>document.getElementById(id).value='');
+  ['fvaBusca','fvaDtIni','fvaDtFim','fvaProjeto','fvaCondutor','fvaArea','fvaPrio','fvaStatus'].forEach(id=>document.getElementById(id).value='');
   loadAtv();
 }
 
